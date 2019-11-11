@@ -66,7 +66,6 @@ function prepareElement(element, errorHandler, context) {
     return Promise.resolve([null, context]);
   }
   const { type, props } = element;
-
   if (typeof type === 'string' || typeof type === 'symbol') {
     return Promise.resolve([props.children, context]);
   }
@@ -98,7 +97,7 @@ function prepareElement(element, errorHandler, context) {
     typeof type === 'object' &&
     type.$$typeof.toString() === 'Symbol(react.forward_ref)'
   ) {
-    return Promise.resolve([props.children, context]);
+    return Promise.resolve([type.render(props), context]);
   }
   if (!isReactCompositeComponent(type)) {
     return Promise.resolve([type(props), context]);
