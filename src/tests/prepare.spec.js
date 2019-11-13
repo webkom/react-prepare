@@ -1,4 +1,30 @@
+/* setup.js */
+//    Setup for jsdom
+
+import { JSDOM } from 'jsdom';
+
+const jsdom = new JSDOM('<!doctype html><html><body></body></html>');
+const { window } = jsdom;
+
+function copyProps(src, target) {
+  Object.defineProperties(target, {
+    ...Object.getOwnPropertyDescriptors(src),
+    ...Object.getOwnPropertyDescriptors(target),
+  });
+}
+
+global.window = window;
+global.document = window.document;
+global.navigator = {
+  userAgent: 'node.js',
+};
+global.requestAnimationFrame = callback => setTimeout(callback, 0);
+global.cancelAnimationFrame = id => {
+  clearTimeout(id);
+};
+copyProps(window, global);
 const { describe, it } = global;
+
 import t from 'tcomb';
 import sinon from 'sinon';
 import equal from 'deep-equal';
@@ -7,6 +33,10 @@ import PropTypes from 'prop-types';
 import { renderToStaticMarkup } from 'react-dom/server';
 import prepared from '../prepared';
 import prepare from '../prepare';
+import { mount, configure } from 'enzyme';
+import Adapter from 'enzyme-adapter-react-16';
+
+configure({ adapter: new Adapter() });
 
 describe('prepare', () => {
   it('sets instance properties', async () => {
@@ -150,11 +180,11 @@ describe('prepare', () => {
     const App = () => (
       <ParagraphWrapper ref={ref}>This is a test</ParagraphWrapper>
     );
-    await prepare(App);
-    const html = renderToStaticMarkup(<App />);
+    await prepare(<App />);
+    mount(<App />);
     t.assert(
-      html === '<p id="test">This is a test</p>',
-      'App should render with correct html',
+      Object.keys(ref.current).some(key => ref.current[key].id === 'test'),
+      'ref should have id test',
     );
   });
 
