@@ -2,7 +2,7 @@ const { describe, it } = global;
 import t from 'tcomb';
 import sinon from 'sinon';
 import equal from 'deep-equal';
-import * as React from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 import { renderToStaticMarkup } from 'react-dom/server';
 import prepared from '../prepared';
@@ -26,6 +26,7 @@ describe('prepare', () => {
         );
         t.assert(this.state === null, 'sets state on instance');
         t.assert(this.updater !== undefined, 'sets updater on instance'); // eslint-disable-line no-undefined
+        // eslint-disable-next-line react/no-string-refs
         t.assert(equal(this.refs, {}), 'sets refs on instance');
         t.assert(equal(this.context, {}), 'sets context on instance');
         return null;
@@ -46,7 +47,7 @@ describe('prepare', () => {
         };
       }
 
-      componentWillMount() {
+      UNSAFE_componentWillMount() {
         this.setState({ message: 'Updated message' });
       }
 
@@ -96,7 +97,7 @@ describe('prepare', () => {
     const prepareUsingProps = async ({ text }) => {
       await doAsyncSideEffect(text);
     };
-    const options = { errorHandler: e => e };
+    const options = { errorHandler: (e) => e };
 
     const App = prepared(prepareUsingProps)(({ text, children }) => (
       <div>
@@ -120,9 +121,9 @@ describe('prepare', () => {
     const outerFunc = () => execOrder.push('outer');
 
     const outerPrepare = async () =>
-      new Promise(resolve => setTimeout(() => outerFunc() && resolve(), 0));
+      new Promise((resolve) => setTimeout(() => outerFunc() && resolve(), 0));
     const innerPrepare = async () =>
-      new Promise(resolve => innerFunc() && resolve());
+      new Promise((resolve) => innerFunc() && resolve());
 
     const Outer = prepared(outerPrepare)(
       ({ text, children }) => (
@@ -159,7 +160,7 @@ describe('prepare', () => {
     const prepareUsingProps = async ({ text }) => {
       await doAsyncSideEffect(text);
     };
-    const options = { errorHandler: e => e };
+    const options = { errorHandler: (e) => e };
 
     const App = prepared(prepareUsingProps)(({ text, children }) => (
       <div>
@@ -181,12 +182,20 @@ describe('prepare', () => {
     t.assert(doAsyncSideEffect.calledThrice, 'Should be called 3 times');
   });
   it('Should support <React.Forwardref />', async () => {
+    // eslint-disable-next-line react/display-name
     const RefSetter = React.forwardRef((props, ref) => {
       ref.current = 'hi';
-      return <p id="test">{props.children} - {ref.current}</p>;
+      return (
+        <p id="test">
+          {/* eslint-disable-next-line react/prop-types */}
+          {props.children} - {ref.current}
+        </p>
+      );
     });
     const RefUserTester = sinon.spy((props, ref) => (
-      <p id="test2">{props.children} - {ref.current}</p>
+      <p id="test2">
+        {props.children} - {ref.current}
+      </p>
     ));
     const RefUser = React.forwardRef(RefUserTester);
     const refToSet = React.createRef();
@@ -196,9 +205,7 @@ describe('prepare', () => {
     const App = () => (
       <React.Fragment>
         <RefSetter ref={refToSet}>This is a ref setter test</RefSetter>
-        <RefUser ref={refToRead}>
-          This is a ref user test
-        </RefUser>
+        <RefUser ref={refToRead}>This is a ref user test</RefUser>
       </React.Fragment>
     );
     await prepare(<App />);
@@ -261,26 +268,24 @@ describe('prepare', () => {
     const AnotherContext = React.createContext();
     const App = () => (
       <MyContext.Consumer>
-        {data => (
+        {(data) => (
           <React.Fragment>
             {data}{' '}
             <MyContext.Provider value="testing">
+              <MyContext.Consumer>{Func}</MyContext.Consumer>
               <MyContext.Consumer>
-                {Func}
-              </MyContext.Consumer>
-              <MyContext.Consumer>
-                {internal => <React.Fragment>{internal}{' '}</React.Fragment>}
+                {(internal) => <React.Fragment>{internal} </React.Fragment>}
               </MyContext.Consumer>
             </MyContext.Provider>
             <MyContext.Consumer>
-              {internal => <React.Fragment>{internal}{' '}</React.Fragment>}
+              {(internal) => <React.Fragment>{internal} </React.Fragment>}
             </MyContext.Consumer>
             <AnotherContext.Consumer>
-              {internal => <React.Fragment>{internal}</React.Fragment>}
+              {(internal) => <React.Fragment>{internal}</React.Fragment>}
             </AnotherContext.Consumer>
             <AnotherContext.Provider value="another">
               <AnotherContext.Consumer>
-                {internal => <React.Fragment>{internal}</React.Fragment>}
+                {(internal) => <React.Fragment>{internal}</React.Fragment>}
               </AnotherContext.Consumer>
             </AnotherContext.Provider>
           </React.Fragment>
@@ -347,9 +352,9 @@ describe('prepare', () => {
     const FirstChild = prepared(prepareUsingPropsForFirstChild)(({ text }) => (
       <span className={classNameOfFirstChild}>{text}</span>
     ));
-    const SecondChild = prepared(
-      prepareUsingPropsForSecondChild,
-    )(({ text }) => <span className={classNameOfSecondChild}>{text}</span>);
+    const SecondChild = prepared(prepareUsingPropsForSecondChild)(
+      ({ text }) => <span className={classNameOfSecondChild}>{text}</span>,
+    );
 
     const App = ({ texts }) => (
       <ul>

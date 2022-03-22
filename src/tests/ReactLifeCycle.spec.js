@@ -12,7 +12,7 @@ describe('React lifecycle methods', () => {
       spyForComponentWillUnmount: PropTypes.func,
     };
 
-    componentWillMount() {
+    UNSAFE_componentWillMount() {
       const { spyForComponentWillMount } = this.props;
       spyForComponentWillMount();
     }
