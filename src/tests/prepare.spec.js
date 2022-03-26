@@ -1,7 +1,6 @@
 const { describe, it } = global;
-import t from 'tcomb';
+import assert from 'assert/strict';
 import sinon from 'sinon';
-import equal from 'deep-equal';
 import React from 'react';
 import PropTypes from 'prop-types';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -20,15 +19,15 @@ describe('prepare', () => {
       }
 
       render() {
-        t.assert(
-          equal(this.props, { message: 'Hello' }),
+        assert.deepEqual(
+          this.props,
+          { message: 'Hello' },
           'sets props on instance',
         );
-        t.assert(this.state === null, 'sets state on instance');
-        t.assert(this.updater !== undefined, 'sets updater on instance'); // eslint-disable-line no-undefined
-        // eslint-disable-next-line react/no-string-refs
-        t.assert(equal(this.refs, {}), 'sets refs on instance');
-        t.assert(equal(this.context, {}), 'sets context on instance');
+        assert.equal(this.state, null, 'sets state on instance');
+        assert.notEqual(this.updater, undefined, 'sets updater on instance');
+        assert.deepEqual(this.refs, {}, 'sets refs on instance'); // eslint-disable-line react/no-string-refs
+        assert.deepEqual(this.context, {}, 'sets context on instance');
         return null;
       }
     }
@@ -53,8 +52,9 @@ describe('prepare', () => {
       }
 
       render() {
-        t.assert(
-          equal(this.state.message, 'Updated message'),
+        assert.deepEqual(
+          this.state,
+          { message: 'Updated message' },
           'updates state on instance',
         );
         return null;
@@ -84,10 +84,11 @@ describe('prepare', () => {
         </App>,
       );
     } catch (err) {
-      t.assert(doAsyncSideEffect.calledOnce, 'Should be called once times');
+      assert.equal(err.message, 'Err', 'Should throw the correct error');
+      assert(doAsyncSideEffect.calledOnce, 'Should be called once times');
       return;
     }
-    t.assert(false, 'It should throw');
+    assert.fail('It should throw');
   });
 
   it("Should be possible to don't throw exception", async () => {
@@ -98,7 +99,6 @@ describe('prepare', () => {
     const prepareUsingProps = async ({ text }) => {
       await doAsyncSideEffect(text);
     };
-    const options = { errorHandler: (e) => e };
 
     const App = prepared(prepareUsingProps)(({ text, children }) => (
       <div>
@@ -110,9 +110,9 @@ describe('prepare', () => {
         <App text="foo" />
         <App text="foo" />
       </App>,
-      options,
+      { errorHandler: (e) => e },
     );
-    t.assert(doAsyncSideEffect.calledThrice, 'Should be called 3 times');
+    assert(doAsyncSideEffect.calledThrice, 'Should be called 3 times');
   });
 
   it('Should handle data deps properly in correct order', async () => {
@@ -146,8 +146,9 @@ describe('prepare', () => {
         </Inner>
       </Outer>,
     );
-    t.assert(
-      equal(execOrder, ['inner', 'inner', 'inner', 'outer']),
+    assert.deepEqual(
+      execOrder,
+      ['inner', 'inner', 'inner', 'outer'],
       'outer should be resolved last',
     );
   });
@@ -167,9 +168,10 @@ describe('prepare', () => {
         {text} <div>{children ? children : null}</div>
       </div>
     ));
-    /* eslint-disable react/prop-types */
+
     const Testing = ({ children }) => <div>Test {children} </div>;
-    /* eslint-enable react/prop-types */
+    Testing.propTypes = { children: PropTypes.node };
+
     await prepare(
       <App text="foo">
         <App text="foo" />
@@ -179,8 +181,9 @@ describe('prepare', () => {
       </App>,
       options,
     );
-    t.assert(doAsyncSideEffect.calledThrice, 'Should be called 3 times');
+    assert(doAsyncSideEffect.calledThrice, 'Should be called 3 times');
   });
+
   it('Should support <React.Forwardref />', async () => {
     // eslint-disable-next-line react/display-name
     const RefSetter = React.forwardRef((props, ref) => {
@@ -210,29 +213,29 @@ describe('prepare', () => {
     );
     await prepare(<App />);
 
-    t.assert(
-      refToRead.current === 'data is correct',
+    assert.equal(
+      refToRead.current,
+      'data is correct',
       'ref value should presist',
     );
-    t.assert(refToSet.current === 'hi', 'ref value should be set');
-    t.assert(
+    assert.equal(refToSet.current, 'hi', 'ref value should be set');
+    assert(
       RefUserTester.calledOnce,
       'Should only be called once during prepare',
     );
-    t.assert(
+    assert(
       RefUserTester.calledOnce,
       'Should only be called once during prepare',
     );
-    t.assert(
-      equal(RefUserTester.getCall(0).args, [
-        { children: 'This is a ref user test' },
-        { current: 'data is correct' },
-      ]),
+    assert.deepEqual(
+      RefUserTester.getCall(0).args,
+      [{ children: 'This is a ref user test' }, { current: 'data is correct' }],
+      'Props and ref should be correct',
     );
     const html = renderToStaticMarkup(<App />);
-    t.assert(
-      html ===
-        '<p id="test">This is a ref setter test - hi</p><p id="test2">This is a ref user test - data is correct</p>',
+    assert.equal(
+      html,
+      '<p id="test">This is a ref setter test - hi</p><p id="test2">This is a ref user test - data is correct</p>',
       'App should render with correct html',
     );
   });
@@ -251,18 +254,19 @@ describe('prepare', () => {
       </React.Fragment>,
     );
 
-    t.assert(
+    assert(
       prepareUsingProps.calledTwice,
       'prepareUsingProps has been called twice',
     );
-    t.assert(
+    assert(
       doAsyncSideEffect.calledTwice,
       'doAsyncSideEffect has been called twice',
     );
     const html = renderToStaticMarkup(<App text="foo" />);
-    t.assert(html === '<div>foo</div>', 'renders with correct html');
+    assert.equal(html, '<div>foo</div>', 'renders with correct html');
   });
-  it('Should support React Contexts />', async () => {
+
+  it('Should support React Contexts', async () => {
     const MyContext = React.createContext('initial');
     const Func = sinon.spy(() => null);
     const AnotherContext = React.createContext();
@@ -293,15 +297,17 @@ describe('prepare', () => {
       </MyContext.Consumer>
     );
     await prepare(<App />);
-    t.assert(Func.calledOnce, 'Func has been called exactly once');
-    t.assert(
-      equal(Func.getCall(0).args, ['testing']),
+    assert(Func.calledOnce, 'Func has been called exactly once');
+    assert.deepEqual(
+      Func.getCall(0).args,
+      ['testing'],
       'Func should be called with testing as arg',
     );
 
     const html = renderToStaticMarkup(<App />);
-    t.assert(
-      html === 'initial testing initial another',
+    assert.equal(
+      html,
+      'initial testing initial another',
       'renders with correct html',
     );
   });
@@ -313,24 +319,26 @@ describe('prepare', () => {
     });
     const App = prepared(prepareUsingProps)(({ text }) => <div>{text}</div>);
     await prepare(<App text="foo" />);
-    t.assert(
+    assert(
       prepareUsingProps.calledOnce,
       'prepareUsingProps has been called exactly once',
     );
-    t.assert(
-      equal(prepareUsingProps.getCall(0).args, [{ text: 'foo' }, {}]),
+    assert.deepEqual(
+      prepareUsingProps.getCall(0).args,
+      [{ text: 'foo' }, {}],
       'prepareUsingProps has been called with correct arguments',
     );
-    t.assert(
+    assert(
       doAsyncSideEffect.calledOnce,
       'doAsyncSideEffect has been called exactly once',
     );
-    t.assert(
-      equal(doAsyncSideEffect.getCall(0).args, ['foo']),
+    assert.deepEqual(
+      doAsyncSideEffect.getCall(0).args,
+      ['foo'],
       'doAsyncSideEffect has been called with correct arguments',
     );
     const html = renderToStaticMarkup(<App text="foo" />);
-    t.assert(html === '<div>foo</div>', 'renders with correct html');
+    assert.equal(html, '<div>foo</div>', 'renders with correct html');
   });
 
   it('Deep hierarchy', async () => {
@@ -372,50 +380,48 @@ describe('prepare', () => {
 
     await prepare(<App texts={['first', 'second']} />);
 
-    t.assert(
+    assert(
       prepareUsingPropsForFirstChild.calledOnce,
       'prepareUsingPropsForFirstChild has been called exactly once',
     );
-    t.assert(
-      equal(prepareUsingPropsForFirstChild.getCall(0).args, [
-        { text: 'first' },
-        {},
-      ]),
+    assert.deepEqual(
+      prepareUsingPropsForFirstChild.getCall(0).args,
+      [{ text: 'first' }, {}],
       'prepareUsingPropsForFirstChild has been called with correct arguments',
     );
-    t.assert(
+    assert(
       doAsyncSideEffectForFirstChild.calledOnce,
       'doAsyncSideEffectForFirstChild has been called exactly once',
     );
-    t.assert(
-      equal(doAsyncSideEffectForFirstChild.getCall(0).args, ['first']),
+    assert.deepEqual(
+      doAsyncSideEffectForFirstChild.getCall(0).args,
+      ['first'],
       'doAsyncSideEffectForFirstChild has been called with correct arguments',
     );
 
-    t.assert(
+    assert(
       prepareUsingPropsForSecondChild.calledOnce,
       'prepareUsingPropsForSecondChild has been called exactly once',
     );
-    t.assert(
-      equal(prepareUsingPropsForSecondChild.getCall(0).args, [
-        { text: 'second' },
-        {},
-      ]),
+    assert.deepEqual(
+      prepareUsingPropsForSecondChild.getCall(0).args,
+      [{ text: 'second' }, {}],
       'prepareUsingPropsForSecondChild has been called with correct arguments',
     );
-    t.assert(
+    assert(
       doAsyncSideEffectForSecondChild.calledOnce,
       'doAsyncSideEffectForSecondChild has been called exactly once',
     );
-    t.assert(
-      equal(doAsyncSideEffectForSecondChild.getCall(0).args, ['second']),
+    assert.deepEqual(
+      doAsyncSideEffectForSecondChild.getCall(0).args,
+      ['second'],
       'doAsyncSideEffectForSecondChild has been called with correct arguments',
     );
 
     const html = renderToStaticMarkup(<App texts={['first', 'second']} />);
-    t.assert(
-      html ===
-        '<ul><li><span class="prepared(FirstChild)">first</span></li><li><span class="prepared(SecondChild)">second</span></li></ul>',
-    ); // eslint-disable-line max-len
+    assert.equal(
+      html,
+      '<ul><li><span class="prepared(FirstChild)">first</span></li><li><span class="prepared(SecondChild)">second</span></li></ul>',
+    );
   });
 });

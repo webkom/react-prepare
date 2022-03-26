@@ -1,5 +1,5 @@
 const { describe, it } = global;
-import t from 'tcomb';
+import assert from 'assert/strict';
 import React from 'react';
 import { Provider } from 'react-redux';
 
@@ -12,7 +12,7 @@ describe('isReactCompositeComponent', () => {
         return <div />;
       }
     }
-    t.assert(isReactCompositeComponent(C), 'match Component');
+    assert(isReactCompositeComponent(C), 'match Component');
   });
 
   it('should match PureComponent', () => {
@@ -21,18 +21,18 @@ describe('isReactCompositeComponent', () => {
         return <div />;
       }
     }
-    t.assert(isReactCompositeComponent(C), 'match PureComponent');
+    assert(isReactCompositeComponent(C), 'match PureComponent');
   });
 
   it('should not match functional component', () => {
     const C = () => <div />;
-    t.assert(
+    assert(
       isReactCompositeComponent(C) === false,
       'not match functional component',
     );
   });
 
   it('should match redux Provider', () => {
-    t.assert(isReactCompositeComponent(Provider), 'match redux Provider');
+    assert(isReactCompositeComponent(Provider), 'match redux Provider');
   });
 });
