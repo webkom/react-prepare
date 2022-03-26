@@ -42,7 +42,7 @@
     "react": "^16.8.2",
     "react-dom": "^16.8.2",
     "react-redux": "^5.1.2",
-    "redux": "^3.6.0",
+    "redux": "^4.1.2",
     "redux-thunk": "^2.1.0",
     "rimraf": "^2.5.4",
     "sinon": "^6.1.5",
