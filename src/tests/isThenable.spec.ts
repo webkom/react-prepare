@@ -17,7 +17,9 @@ describe('isThenable(p)', () => {
   });
 
   it('recognizes function as non-thenable', () => {
-    function nonThenable() {}
+    function nonThenable() {
+      // intentionally empty
+    }
     assert(!isThenable(nonThenable));
   });
 
