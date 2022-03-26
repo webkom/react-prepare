@@ -126,13 +126,12 @@ describe('prepare', () => {
     const innerPrepare = async () =>
       new Promise((resolve) => innerFunc() && resolve());
 
-    const Outer = prepared(outerPrepare)(
+    const Outer = prepared(outerPrepare, { awaitOnSsr: false })(
       ({ text, children }) => (
         <div>
           {text} <div>{children ? children : null}</div>
         </div>
       ),
-      { hasSsrDataDeps: false },
     );
     const Inner = prepared(innerPrepare)(({ text, children }) => (
       <div>
