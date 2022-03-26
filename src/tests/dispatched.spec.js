@@ -21,9 +21,9 @@ const HTTP_STATUS_OK_BOUNDS = {
 describe('dispatched', () => {
   it('Real-world-like example using redux, koa, et. al', async () => {
     // Create a fake echo server that replies with the pathname, preceded by 'echo '.
-    const echoServer = koa().use(function* echo(next) {
-      this.response.body = `echo ${this.request.path}`;
-      yield next;
+    const echoServer = new koa();
+    echoServer.use(async (ctx) => {
+      ctx.body = `echo ${ctx.path}`;
     });
     const echoHttpServer = echoServer.listen();
     try {
