@@ -9,7 +9,7 @@
     "lint:eslint": "eslint src/**/*.js",
     "lint:prettier": "prettier '**/*.{js,css,md,ts,tsx}' --check",
     "build": "babel src -d dist --source-maps --extensions '.js'",
-    "test": "node_modules/.bin/mocha --compilers js:babel-register src/**/*.spec.js",
+    "test": "mocha --require @babel/register src/**/*.spec.js",
     "make": "yarn run lint && yarn run clean && yarn run build && yarn run test",
     "prettier": "prettier '**/*.{js,css,md,ts,tsx,json}' --write"
   },
@@ -35,7 +35,7 @@
     "eslint-plugin-babel": "^5.3.1",
     "eslint-plugin-react": "^7.29.4",
     "koa": "^2.13.4",
-    "mocha": "^3.2.0",
+    "mocha": "^9.2.2",
     "node-fetch": "^2.6.7",
     "prettier": "^2.6.2",
     "prop-types": "^15.7.2",
