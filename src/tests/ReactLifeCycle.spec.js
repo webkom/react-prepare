@@ -12,7 +12,8 @@ describe('React lifecycle methods', () => {
       spyForComponentWillUnmount: PropTypes.func,
     };
 
-    UNSAFE_componentWillMount() {
+    // eslint-disable-next-line react/no-deprecated
+    componentWillMount() {
       const { spyForComponentWillMount } = this.props;
       spyForComponentWillMount();
     }
