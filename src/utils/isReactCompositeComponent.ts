@@ -1,4 +1,4 @@
-export default function isReactCompositeComponent(type) {
+export default function isReactCompositeComponent(type: unknown): boolean {
   if (typeof type !== 'function') {
     return false;
   }

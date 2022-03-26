@@ -26,10 +26,7 @@ describe('isReactCompositeComponent', () => {
 
   it('should not match functional component', () => {
     const C = () => <div />;
-    assert(
-      isReactCompositeComponent(C) === false,
-      'not match functional component',
-    );
+    assert(!isReactCompositeComponent(C), 'not match functional component');
   });
 
   it('should match redux Provider', () => {

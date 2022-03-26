@@ -1,54 +1,55 @@
 const { describe, it, beforeEach } = global;
-import sinon from 'sinon';
+import sinon, { SinonSpy } from 'sinon';
 import assert from 'assert/strict';
-import React, { Component, PureComponent } from 'react';
-import PropTypes from 'prop-types';
+import React, { Component, ComponentType, PureComponent } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
-import prepared, { isPrepared, getPrepare } from '../prepared';
+import prepared, {
+  isPrepared,
+  getPrepare,
+  PreparedComponentType,
+} from '../prepared';
 
 describe('prepared', () => {
-  class OriginalCompositeComponent extends Component {
-    static propTypes = {
-      text: PropTypes.string,
-    };
+  interface IProps {
+    text: string;
+  }
+
+  class OriginalCompositeComponent extends Component<IProps> {
     render() {
       return <div>{this.props.text}</div>;
     }
   }
 
-  class OriginalCompositePureComponent extends PureComponent {
-    static propTypes = {
-      text: PropTypes.string,
-    };
+  class OriginalCompositePureComponent extends PureComponent<IProps> {
     render() {
       return <div>{this.props.text}</div>;
     }
   }
 
-  const OriginalArrowComponent = ({ text }) => <div>{text}</div>;
-  OriginalArrowComponent.propTypes = {
-    text: PropTypes.string,
-  };
+  const OriginalArrowComponent = ({ text }: IProps) => <div>{text}</div>;
 
-  let doAsyncSideEffect;
-  let prepareUsingProps;
+  let doAsyncSideEffect: SinonSpy<[string], Promise<string>>;
+  let prepareUsingProps: SinonSpy<[IProps], Promise<void>>;
 
   beforeEach(() => {
-    doAsyncSideEffect = sinon.spy(async () => {});
-    prepareUsingProps = sinon.spy(async ({ text }) => {
+    doAsyncSideEffect = sinon.spy(async (text: string) => text);
+    prepareUsingProps = sinon.spy(async ({ text }: IProps) => {
       await doAsyncSideEffect(text);
     });
   });
 
-  const testComponent = async (OriginalComponent, PreparedComponent) => {
+  const testComponent = async (
+    OriginalComponent: ComponentType<IProps>,
+    PreparedComponent: PreparedComponentType<IProps>,
+  ) => {
     assert(!isPrepared(OriginalComponent), 'OriginalComponent is not prepared');
     assert(isPrepared(PreparedComponent), 'PreparedComponent is prepared');
     const prepare = getPrepare(PreparedComponent);
     assert.equal(
       typeof prepare,
       'function',
-      'getPrepare(PreparedCompositeComponent) is a function',
+      'getPrepare(PreparedComponent) is a function',
     );
     await prepare({ text: 'foo' });
     assert(
@@ -98,5 +99,30 @@ describe('prepared', () => {
     );
 
     await testComponent(OriginalArrowComponent, PreparedCompositeComponent);
+  });
+
+  const testGetPrepareError = <P,>(UnpreparedComponent: ComponentType<P>) => {
+    assert(
+      !isPrepared(UnpreparedComponent),
+      'Original component is not prepared',
+    );
+    assert.throws(
+      () => {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        getPrepare(UnpreparedComponent);
+      },
+      {
+        name: 'TypeError',
+        message: 'getPrepare() was called with a non-prepared component',
+      },
+      'getPrepare throws error when run with a non-prepared composite component',
+    );
+  };
+
+  it('throws if getPrepare is called with a non-prepared component', async () => {
+    testGetPrepareError(OriginalCompositeComponent);
+    testGetPrepareError(OriginalCompositePureComponent);
+    testGetPrepareError(OriginalArrowComponent);
   });
 });
