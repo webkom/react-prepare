@@ -1,4 +1,4 @@
-function isThenable(p: unknown): boolean {
+function isThenable<T>(p: unknown): p is Promise<T> {
   return (
     !!p &&
     typeof p === 'object' &&

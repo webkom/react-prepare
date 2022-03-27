@@ -1,14 +1,10 @@
+import { PreparedComponentType } from '../utils/types';
 const { describe, it, beforeEach } = global;
 import sinon, { SinonSpy } from 'sinon';
 import assert from 'assert/strict';
 import React, { Component, ComponentType, PureComponent } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-
-import prepared, {
-  isPrepared,
-  getPrepare,
-  PreparedComponentType,
-} from '../prepared';
+import prepared, { isPrepared, getPrepare } from '../prepared';
 
 describe('prepared', () => {
   interface IProps {

@@ -1,12 +1,11 @@
-import React, {
-  PureComponent,
-  Component,
-  ComponentType,
-  Context,
-  ComponentClass,
-} from 'react';
+import React, { PureComponent, Component, ComponentType } from 'react';
 
 import { __REACT_PREPARE__ } from './constants';
+import {
+  PrepareContext,
+  PreparedComponentType,
+  PrepareFn,
+} from './utils/types';
 
 interface PreparedOptions<P, C> {
   pure?: boolean;
@@ -18,33 +17,18 @@ interface PreparedOptions<P, C> {
   contextTypes?: object;
 }
 
-export type PreparedComponentType<
-  P,
-  C extends Context<unknown> = Context<unknown>,
-> = ComponentClass<P> & {
-  [__REACT_PREPARE__]: {
-    prepare: PrepareFn<P, C>;
-    awaitOnSsr: boolean;
-  };
-};
-
-export type PrepareFn<P, C extends Context<unknown>> = (
-  props: P,
-  context?: C,
-) => void;
-
-const prepared =
-  <P, C extends Context<unknown> = Context<unknown>>(
-    prepare: PrepareFn<P, C>,
-    {
-      pure = true,
-      componentDidMount = true,
-      componentWillReceiveProps = true,
-      awaitOnSsr = true,
-      contextTypes = {},
-    }: PreparedOptions<P, C> = {},
-  ): ((OriginalComponent: ComponentType<P>) => PreparedComponentType<P, C>) =>
-  (OriginalComponent) => {
+const prepared = <P, C = PrepareContext>(
+  prepare: PrepareFn<P>,
+  options: PreparedOptions<P, C> = {},
+): ((OriginalComponent: ComponentType<P>) => PreparedComponentType<P>) => {
+  const {
+    pure = true,
+    componentDidMount = true,
+    componentWillReceiveProps = true,
+    awaitOnSsr = true,
+    contextTypes = {},
+  } = options;
+  return (OriginalComponent) => {
     const { displayName } = OriginalComponent;
 
     const ReactComponent = pure ? PureComponent : Component;
@@ -83,18 +67,19 @@ const prepared =
       }
     }
 
-    (PreparedComponent as PreparedComponentType<P, C>)[__REACT_PREPARE__] = {
+    (PreparedComponent as PreparedComponentType<P>)[__REACT_PREPARE__] = {
       prepare: prepare.bind(null),
       awaitOnSsr,
     };
 
-    return PreparedComponent as PreparedComponentType<P, C>;
+    return PreparedComponent as PreparedComponentType<P>;
   };
+};
 
-function getPrepare<P, C extends Context<unknown>>(
-  CustomComponent: PreparedComponentType<P, C>,
-): PrepareFn<P, C> {
-  if (!(__REACT_PREPARE__ in CustomComponent)) {
+function getPrepare<P>(
+  CustomComponent: PreparedComponentType<P>,
+): PrepareFn<P> {
+  if (!isPrepared(CustomComponent)) {
     throw new TypeError(
       'getPrepare() was called with a non-prepared component',
     );
@@ -104,7 +89,7 @@ function getPrepare<P, C extends Context<unknown>>(
 
 function isPrepared<P>(
   CustomComponent: PreparedComponentType<P> | ComponentType<P>,
-): boolean {
+): CustomComponent is PreparedComponentType<P> {
   return __REACT_PREPARE__ in CustomComponent;
 }
 
@@ -112,8 +97,7 @@ function shouldAwaitOnSsr<P>(
   CustomComponent: PreparedComponentType<P> | ComponentType<P>,
 ) {
   return (
-    __REACT_PREPARE__ in CustomComponent &&
-    CustomComponent[__REACT_PREPARE__].awaitOnSsr
+    isPrepared(CustomComponent) && CustomComponent[__REACT_PREPARE__].awaitOnSsr
   );
 }
 

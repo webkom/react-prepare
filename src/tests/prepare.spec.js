@@ -74,21 +74,20 @@ describe('prepare', () => {
       await doAsyncSideEffect(text);
     };
     const App = prepared(prepareUsingProps)(({ text }) => <div>{text}</div>);
-    try {
-      await prepare(
-        <App text="foo">
-          <App text="foo" />
-          <App text="foo" />
-          <App text="foo" />
-          <App text="foo" />
-        </App>,
-      );
-    } catch (err) {
-      assert.equal(err.message, 'Err', 'Should throw the correct error');
-      assert(doAsyncSideEffect.calledOnce, 'Should be called once times');
-      return;
-    }
-    assert.fail('It should throw');
+    await assert.rejects(
+      async () => {
+        await prepare(
+          <App text="foo">
+            <App text="foo" />
+            <App text="foo" />
+            <App text="foo" />
+            <App text="foo" />
+          </App>,
+        );
+      },
+      { message: 'Err' },
+    );
+    assert(doAsyncSideEffect.calledOnce, 'Should be called once times');
   });
 
   it("Should be possible to don't throw exception", async () => {
