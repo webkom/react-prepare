@@ -20,6 +20,7 @@ import { __REACT_PREPARE__ } from '../constants';
 export interface PrepareContext<
   P extends PropsWithChildren<unknown> = PropsWithChildren<unknown>,
 > {
+  store?: { dispatch: unknown };
   _providers?: Map<Provider<unknown>, P>;
 }
 

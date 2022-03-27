@@ -1,7 +1,7 @@
 const { describe, it } = global;
 import assert from 'assert/strict';
 import sinon from 'sinon';
-import React from 'react';
+import React, { MutableRefObject, PropsWithChildren } from 'react';
 import PropTypes from 'prop-types';
 import { renderToStaticMarkup } from 'react-dom/server';
 import prepared from '../prepared';
@@ -9,13 +9,11 @@ import prepare from '../prepare';
 
 describe('prepare', () => {
   it('sets instance properties', async () => {
-    class MessageBox extends React.Component {
-      static propTypes = {
-        message: PropTypes.string,
-      };
+    class MessageBox extends React.Component<{ message: string }> {
+      updater = undefined;
 
-      constructor() {
-        super();
+      constructor(props: { message: string }) {
+        super(props);
       }
 
       render() {
@@ -40,7 +38,7 @@ describe('prepare', () => {
   it('supports state updates inside componentWillMount', async () => {
     class MessageBox extends React.Component {
       constructor() {
-        super();
+        super({});
         this.state = {
           message: 'Hello',
         };
@@ -66,11 +64,39 @@ describe('prepare', () => {
     await prepare(<MessageBox />);
   });
 
+  it('supports state updates inside UNSAFE_componentWillMount', async () => {
+    class MessageBox extends React.Component {
+      constructor() {
+        super({});
+        this.state = {
+          message: 'Hello',
+        };
+      }
+
+      UNSAFE_componentWillMount() {
+        this.setState({ message: 'Updated message' });
+      }
+
+      render() {
+        assert.deepEqual(
+          this.state,
+          { message: 'Updated message' },
+          'updates state on instance',
+        );
+        return null;
+      }
+    }
+
+    renderToStaticMarkup(<MessageBox />);
+
+    await prepare(<MessageBox />);
+  });
+
   it('Should throw exception', async () => {
-    const doAsyncSideEffect = sinon.spy(async () => {
-      throw new Error('Err');
+    const doAsyncSideEffect = sinon.spy(async (text: string) => {
+      throw new Error('Err ' + text);
     });
-    const prepareUsingProps = async ({ text }) => {
+    const prepareUsingProps = async ({ text }: { text: string }) => {
       await doAsyncSideEffect(text);
     };
     const App = prepared(prepareUsingProps)(({ text }) => <div>{text}</div>);
@@ -85,17 +111,17 @@ describe('prepare', () => {
           </App>,
         );
       },
-      { message: 'Err' },
+      { message: 'Err foo' },
     );
     assert(doAsyncSideEffect.calledOnce, 'Should be called once times');
   });
 
   it("Should be possible to don't throw exception", async () => {
-    const doAsyncSideEffect = sinon.spy(async () => {
-      throw new Error('Errooor');
+    const doAsyncSideEffect = sinon.spy(async (text: string) => {
+      throw new Error('Errooor ' + text);
     });
 
-    const prepareUsingProps = async ({ text }) => {
+    const prepareUsingProps = async ({ text }: { text: string }) => {
       await doAsyncSideEffect(text);
     };
 
@@ -114,25 +140,63 @@ describe('prepare', () => {
     assert(doAsyncSideEffect.calledThrice, 'Should be called 3 times');
   });
 
+  it("Should be possible to don't throw exception", async () => {
+    const doAsyncSideEffect = sinon.spy(async (text: string) => {
+      throw new Error('Errooor ' + text);
+    });
+
+    const prepareUsingProps = async ({ text }: { text: string }) => {
+      await doAsyncSideEffect(text);
+    };
+
+    const App = prepared(prepareUsingProps)(({ text, children }) => (
+      <div>
+        {text} <div>{children ? children : null}</div>
+      </div>
+    ));
+
+    const Testing = ({ children }: PropsWithChildren<unknown>) => (
+      <div>Test {children} </div>
+    );
+
+    await prepare(
+      <App text="foo">
+        <App text="foo" />
+        <Testing>
+          <App text="foo" />
+        </Testing>
+      </App>,
+      { errorHandler: (e) => e },
+    );
+    assert(doAsyncSideEffect.calledThrice, 'Should be called 3 times');
+  });
+
   it('Should handle data deps properly in correct order', async () => {
-    const execOrder = [];
+    const execOrder: string[] = [];
 
     const innerFunc = () => execOrder.push('inner');
     const outerFunc = () => execOrder.push('outer');
 
     const outerPrepare = async () =>
-      new Promise((resolve) => setTimeout(() => outerFunc() && resolve(), 0));
-    const innerPrepare = async () =>
-      new Promise((resolve) => innerFunc() && resolve());
+      new Promise<void>((resolve) =>
+        setTimeout(() => outerFunc() && resolve(), 0),
+      );
 
-    const Outer = prepared(outerPrepare, { awaitOnSsr: false })(
+    const innerPrepare = async () =>
+      new Promise<void>((resolve) => innerFunc() && resolve());
+
+    interface IProps {
+      text: string;
+    }
+
+    const Outer = prepared<IProps>(outerPrepare, { awaitOnSsr: false })(
       ({ text, children }) => (
         <div>
           {text} <div>{children ? children : null}</div>
         </div>
       ),
     );
-    const Inner = prepared(innerPrepare)(({ text, children }) => (
+    const Inner = prepared<IProps>(innerPrepare)(({ text, children }) => (
       <div>
         {text} <div>{children ? children : null}</div>
       </div>
@@ -152,57 +216,27 @@ describe('prepare', () => {
     );
   });
 
-  it("Should be possible to don't throw exception", async () => {
-    const doAsyncSideEffect = sinon.spy(async () => {
-      throw new Error('Errooor');
-    });
-
-    const prepareUsingProps = async ({ text }) => {
-      await doAsyncSideEffect(text);
-    };
-    const options = { errorHandler: (e) => e };
-
-    const App = prepared(prepareUsingProps)(({ text, children }) => (
-      <div>
-        {text} <div>{children ? children : null}</div>
-      </div>
-    ));
-
-    const Testing = ({ children }) => <div>Test {children} </div>;
-    Testing.propTypes = { children: PropTypes.node };
-
-    await prepare(
-      <App text="foo">
-        <App text="foo" />
-        <Testing>
-          <App text="foo" />
-        </Testing>
-      </App>,
-      options,
-    );
-    assert(doAsyncSideEffect.calledThrice, 'Should be called 3 times');
-  });
-
   it('Should support <React.Forwardref />', async () => {
     // eslint-disable-next-line react/display-name
-    const RefSetter = React.forwardRef((props, ref) => {
-      ref.current = 'hi';
-      return (
-        <p id="test">
-          {/* eslint-disable-next-line react/prop-types */}
-          {props.children} - {ref.current}
-        </p>
-      );
-    });
+    const RefSetter = React.forwardRef<string, PropsWithChildren<unknown>>(
+      (props, ref) => {
+        (ref as MutableRefObject<string>).current = 'hi';
+        return (
+          <p id="test">
+            {props.children} - {(ref as MutableRefObject<string>).current}
+          </p>
+        );
+      },
+    );
     const RefUserTester = sinon.spy((props, ref) => (
       <p id="test2">
         {props.children} - {ref.current}
       </p>
     ));
     const RefUser = React.forwardRef(RefUserTester);
-    const refToSet = React.createRef();
+    const refToSet = React.createRef<string>();
     const refToRead = React.createRef();
-    refToRead.current = 'data is correct';
+    (refToRead as MutableRefObject<string>).current = 'data is correct';
 
     const App = () => (
       <React.Fragment>
@@ -240,7 +274,7 @@ describe('prepare', () => {
   });
 
   it('Should support <React.Fragment />', async () => {
-    const doAsyncSideEffect = sinon.spy(async () => {});
+    const doAsyncSideEffect = sinon.spy(async (text) => text);
     const prepareUsingProps = sinon.spy(async ({ text }) => {
       await doAsyncSideEffect(text);
     });
@@ -268,7 +302,7 @@ describe('prepare', () => {
   it('Should support React Contexts', async () => {
     const MyContext = React.createContext('initial');
     const Func = sinon.spy(() => null);
-    const AnotherContext = React.createContext();
+    const AnotherContext = React.createContext<string>('');
     const App = () => (
       <MyContext.Consumer>
         {(data) => (
@@ -312,7 +346,7 @@ describe('prepare', () => {
   });
 
   it('Shallow hierarchy (no children)', async () => {
-    const doAsyncSideEffect = sinon.spy(async () => {});
+    const doAsyncSideEffect = sinon.spy(async (text) => text);
     const prepareUsingProps = sinon.spy(async ({ text }) => {
       await doAsyncSideEffect(text);
     });
@@ -343,14 +377,16 @@ describe('prepare', () => {
   it('Deep hierarchy', async () => {
     let classNameOfFirstChild = 'FirstChild';
     let classNameOfSecondChild = 'SecondChild';
-    const doAsyncSideEffectForFirstChild = sinon.spy(async () => {
+    const doAsyncSideEffectForFirstChild = sinon.spy(async (text) => {
       classNameOfFirstChild = 'prepared(FirstChild)';
+      return text;
     });
     const prepareUsingPropsForFirstChild = sinon.spy(async ({ text }) => {
       await doAsyncSideEffectForFirstChild(text);
     });
-    const doAsyncSideEffectForSecondChild = sinon.spy(async () => {
+    const doAsyncSideEffectForSecondChild = sinon.spy(async (text) => {
       classNameOfSecondChild = 'prepared(SecondChild)';
+      return text;
     });
     const prepareUsingPropsForSecondChild = sinon.spy(async ({ text }) => {
       await doAsyncSideEffectForSecondChild(text);
@@ -363,7 +399,7 @@ describe('prepare', () => {
       ({ text }) => <span className={classNameOfSecondChild}>{text}</span>,
     );
 
-    const App = ({ texts }) => (
+    const App = ({ texts }: { texts: string[] }) => (
       <ul>
         <li key={0}>
           <FirstChild text={texts[0]} />
