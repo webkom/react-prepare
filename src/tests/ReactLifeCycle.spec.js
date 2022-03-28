@@ -9,6 +9,7 @@ describe('React lifecycle methods', () => {
   class CompositeComponent extends Component {
     static propTypes = {
       spyForComponentWillMount: PropTypes.func,
+      spyForUNSAFEComponentWillMount: PropTypes.func,
       spyForComponentWillUnmount: PropTypes.func,
     };
 
@@ -16,6 +17,11 @@ describe('React lifecycle methods', () => {
     componentWillMount() {
       const { spyForComponentWillMount } = this.props;
       spyForComponentWillMount();
+    }
+
+    UNSAFE_componentWillMount() {
+      const { spyForUNSAFEComponentWillMount } = this.props;
+      spyForUNSAFEComponentWillMount();
     }
 
     componentWillUnmount() {
@@ -30,10 +36,12 @@ describe('React lifecycle methods', () => {
 
   it('renderToString calls #componentWillMount()', () => {
     const spyForComponentWillMount = sinon.spy();
+    const spyForUNSAFEComponentWillMount = () => void 0;
     const spyForComponentWillUnmount = () => void 0;
     renderToString(
       <CompositeComponent
         spyForComponentWillMount={spyForComponentWillMount}
+        spyForUNSAFEComponentWillMount={spyForUNSAFEComponentWillMount}
         spyForComponentWillUnmount={spyForComponentWillUnmount}
       />,
     );
@@ -43,12 +51,31 @@ describe('React lifecycle methods', () => {
     );
   });
 
+  it('renderToString calls #UNSAFE_componentWillMount()', () => {
+    const spyForComponentWillMount = () => void 0;
+    const spyForUNSAFEComponentWillMount = sinon.spy();
+    const spyForComponentWillUnmount = () => void 0;
+    renderToString(
+      <CompositeComponent
+        spyForComponentWillMount={spyForComponentWillMount}
+        spyForUNSAFEComponentWillMount={spyForUNSAFEComponentWillMount}
+        spyForComponentWillUnmount={spyForComponentWillUnmount}
+      />,
+    );
+    assert(
+      spyForUNSAFEComponentWillMount.calledOnce,
+      '#UNSAFE_componentWillMount() has been called once',
+    );
+  });
+
   it("renderToString doesn't call #componentWillUnmount()", () => {
     const spyForComponentWillMount = () => void 0;
+    const spyForUNSAFEComponentWillMount = () => void 0;
     const spyForComponentWillUnmount = sinon.spy();
     renderToString(
       <CompositeComponent
         spyForComponentWillMount={spyForComponentWillMount}
+        spyForUNSAFEComponentWillMount={spyForUNSAFEComponentWillMount}
         spyForComponentWillUnmount={spyForComponentWillUnmount}
       />,
     );
