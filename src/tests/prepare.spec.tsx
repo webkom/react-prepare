@@ -1,7 +1,12 @@
 const { describe, it } = global;
 import assert from 'assert/strict';
 import sinon from 'sinon';
-import React, { MutableRefObject, PropsWithChildren } from 'react';
+import React, {
+  MutableRefObject,
+  PropsWithChildren,
+  useEffect,
+  useState,
+} from 'react';
 import PropTypes from 'prop-types';
 import { renderToStaticMarkup } from 'react-dom/server';
 import prepared from '../prepared';
@@ -458,5 +463,38 @@ describe('prepare', () => {
       html,
       '<ul><li><span class="prepared(FirstChild)">first</span></li><li><span class="prepared(SecondChild)">second</span></li></ul>',
     );
+  });
+
+  it('Should render components that contain hooks (ignoring useEffects)', async () => {
+    const doAsyncSideEffect = sinon.spy(async (text) => text);
+    const prepareUsingProps = sinon.spy(async ({ text }) => {
+      await doAsyncSideEffect(text);
+    });
+    const App = prepared(prepareUsingProps)(({ text }) => {
+      const [state, setState] = useState('initial');
+
+      useEffect(() => {
+        setState('updated');
+      }, []);
+
+      return (
+        <div>
+          {text} {state}
+        </div>
+      );
+    });
+
+    await prepare(<App text="foo" />);
+
+    assert(
+      prepareUsingProps.calledOnce,
+      'prepareUsingProps has been called once',
+    );
+    assert(
+      doAsyncSideEffect.calledOnce,
+      'doAsyncSideEffect has been called once',
+    );
+    const html = renderToStaticMarkup(<App text="foo" />);
+    assert.equal(html, '<div>foo initial</div>', 'renders with correct html');
   });
 });

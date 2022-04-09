@@ -6,7 +6,6 @@ import React, {
   PropsWithChildren,
   ReactNode,
 } from 'react';
-
 import isReactCompositeComponent from './utils/isReactCompositeComponent';
 import isThenable from './utils/isThenable';
 import { isPrepared, getPrepare, shouldAwaitOnSsr } from './prepared';
@@ -24,6 +23,7 @@ import {
   isForwardRef,
   isFunctionComponent,
 } from './utils/isComponentType';
+import ShallowRenderer from 'react-shallow-renderer';
 
 const updater: Updater = {
   enqueueSetState<P, S extends Map<unknown, unknown> = Map<unknown, unknown>>(
@@ -154,7 +154,10 @@ async function prepareElement<
   }
 
   if (isFunctionComponent(element)) {
-    return [element.type(element.props), context];
+    const renderer = new ShallowRenderer();
+    renderer.render(element);
+    const result = renderer.getRenderOutput();
+    return [result, context];
   }
 
   if (isReactCompositeComponent(element.type)) {
