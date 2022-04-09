@@ -6,7 +6,6 @@ import React, {
   PropsWithChildren,
   ReactNode,
 } from 'react';
-import isReactCompositeComponent from './utils/isReactCompositeComponent';
 import isThenable from './utils/isThenable';
 import { isPrepared, getPrepare, shouldAwaitOnSsr } from './prepared';
 import {
@@ -23,6 +22,7 @@ import {
   isElement,
   isForwardRef,
   isFunctionComponent,
+  isCompositeComponent,
 } from './utils/isComponentType';
 import ShallowRenderer from 'react-shallow-renderer';
 
@@ -174,11 +174,11 @@ async function prepareElement<
     return [result, context];
   }
 
-  if (isReactCompositeComponent(element.type)) {
+  if (isCompositeComponent(element)) {
     return prepareCompositeElement(element, errorHandler, context);
   }
 
-  throw Error('Unrecognized element type: \n' + element.toString());
+  throw Error('Unrecognized element type: \n' + element);
 }
 
 type ErrorHandler = (error: unknown) => void;

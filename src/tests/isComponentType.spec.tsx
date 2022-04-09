@@ -1,5 +1,6 @@
 import assert from 'assert/strict';
 import {
+  isCompositeComponent,
   isContextConsumer,
   isContextProvider,
   isDOMElementOrFragment,
@@ -16,6 +17,8 @@ import React, {
   ReactText,
 } from 'react';
 import { ElementType } from '../utils/types';
+import { Provider } from 'react-redux';
+import { createStore } from 'redux';
 
 describe('isComponentType functions', () => {
   type IProps = PropsWithChildren<{
@@ -186,5 +189,41 @@ describe('isComponentType functions', () => {
     assert(!isFunctionComponent(element));
     assert(!isContextProvider(element));
     assert(isContextConsumer(element));
+  });
+
+  describe('isReactCompositeComponent', () => {
+    it('should match Component', () => {
+      class C extends React.Component {
+        render() {
+          return <div />;
+        }
+      }
+      assert(isCompositeComponent(<C />), 'match Component');
+    });
+
+    it('should match PureComponent', () => {
+      class C extends React.PureComponent {
+        render() {
+          return <div />;
+        }
+      }
+      assert(isCompositeComponent(<C />), 'match PureComponent');
+    });
+
+    it('should not match functional component', () => {
+      const C = () => <div />;
+      assert(!isCompositeComponent(<C />), 'not match functional component');
+    });
+
+    it('should match redux Provider', () => {
+      assert(
+        isCompositeComponent(
+          <Provider store={createStore(() => {})}>
+            <></>
+          </Provider>,
+        ),
+        'match redux Provider',
+      );
+    });
   });
 });

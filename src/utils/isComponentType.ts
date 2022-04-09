@@ -1,4 +1,10 @@
-import { DOMElement, FunctionComponentElement, ReactText } from 'react';
+import {
+  Component,
+  ComponentElement,
+  DOMElement,
+  FunctionComponentElement,
+  ReactText,
+} from 'react';
 import {
   ContextConsumerElement,
   ContextProviderElement,
@@ -71,5 +77,17 @@ export function isFunctionComponent<P>(
     !isTextNode(element) &&
     typeof element.type === 'function' &&
     !('render' in element.type.prototype)
+  );
+}
+
+export function isCompositeComponent<P>(
+  element: ReactNodeType<P>,
+): element is ComponentElement<P, Component<P>> {
+  return (
+    isElement(element) &&
+    !isTextNode(element) &&
+    typeof element.type === 'function' &&
+    typeof element.type.prototype === 'object' &&
+    typeof element.type.prototype.render === 'function'
   );
 }

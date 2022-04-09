@@ -98,7 +98,6 @@ describe('dispatched', () => {
             into,
             value: await res.text(),
           });
-          return;
         } catch (err) {
           dispatch({
             type: FETCH_FAILED,
