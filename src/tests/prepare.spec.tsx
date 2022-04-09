@@ -2,6 +2,7 @@ const { describe, it } = global;
 import assert from 'assert/strict';
 import sinon from 'sinon';
 import React, {
+  memo,
   MutableRefObject,
   PropsWithChildren,
   useContext,
@@ -397,6 +398,18 @@ describe('prepare', () => {
       '<p>My:initial</p><p>My:testing<p>My:testing</p></p><p>Another:</p><p>My:myOther</p><p>Another:another</p>',
       'renders with correct html',
     );
+  });
+
+  it('Should support React.memo()', async () => {
+    // eslint-disable-next-line react/display-name
+    const Memoized = memo(({ text }: { text: string }) => <div>{text}</div>);
+    console.log(<Memoized text="test" />);
+
+    const App = () => <Memoized text="test" />;
+    await prepare(<App />);
+
+    const html = renderToStaticMarkup(<App />);
+    assert.equal(html, '<div>test</div>', 'renders with correct html');
   });
 
   it('Shallow hierarchy (no children)', async () => {

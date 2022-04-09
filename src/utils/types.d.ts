@@ -64,12 +64,18 @@ export type ForwardRefElement<P> = ReactElement<P, ForwardRefType> & {
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 export type ContextElement<P> = ReactElement<P, ExoticComponentElementType>;
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+export type MemoElement<P> = ReactElement<P, ExoticComponentElementType>;
 export type ContextProviderElement<P> = ContextElement<P>;
 export type ContextConsumerElement<P, T> = ContextElement<P> & {
   props: { children: (data: T) => ReactChild | ReactChild[] | null };
 };
 
-export type ExoticElement<P> = ForwardRefElement<P> | ContextElement<P>;
+export type ExoticElement<P> =
+  | ForwardRefElement<P>
+  | ContextElement<P>
+  | MemoElement<P>;
 
 export type ElementType<P> =
   | FunctionComponentElement<P>

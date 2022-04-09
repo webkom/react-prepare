@@ -7,11 +7,13 @@ import {
   isElement,
   isForwardRef,
   isFunctionComponent,
+  isMemo,
   isTextNode,
 } from '../utils/isComponentType';
 import React, {
   Component,
   createContext,
+  memo,
   PropsWithChildren,
   PureComponent,
   ReactText,
@@ -66,6 +68,7 @@ describe('isComponentType functions', () => {
     assert(!isTextNode(element));
     assert(isDOMElementOrFragment(element));
     assert(!isForwardRef(element));
+    assert(!isMemo(element));
     assert(!isFunctionComponent(element));
     assert(!isContextProvider(element));
     assert(!isContextConsumer(element));
@@ -78,6 +81,7 @@ describe('isComponentType functions', () => {
     assert(!isTextNode(element));
     assert(isDOMElementOrFragment(element));
     assert(!isForwardRef(element));
+    assert(!isMemo(element));
     assert(!isFunctionComponent(element));
     assert(!isContextProvider(element));
     assert(!isContextConsumer(element));
@@ -88,6 +92,7 @@ describe('isComponentType functions', () => {
     assert(!isTextNode(element));
     assert(!isDOMElementOrFragment(element));
     assert(!isForwardRef(element));
+    assert(!isMemo(element));
     assert(!isFunctionComponent(element));
     assert(!isContextProvider(element));
     assert(!isContextConsumer(element));
@@ -120,6 +125,7 @@ describe('isComponentType functions', () => {
     assert(!isTextNode(element));
     assert(!isDOMElementOrFragment(element));
     assert(!isForwardRef(element));
+    assert(!isMemo(element));
     assert(isFunctionComponent(element));
     assert(!isContextProvider(element));
     assert(!isContextConsumer(element));
@@ -158,6 +164,7 @@ describe('isComponentType functions', () => {
     assert(!isTextNode(element));
     assert(!isDOMElementOrFragment(element));
     assert(isForwardRef(element));
+    assert(!isMemo(element));
     assert(!isFunctionComponent(element));
     assert(!isContextProvider(element));
     assert(!isContextConsumer(element));
@@ -172,6 +179,7 @@ describe('isComponentType functions', () => {
     assert(!isTextNode(element));
     assert(!isDOMElementOrFragment(element));
     assert(!isForwardRef(element));
+    assert(!isMemo(element));
     assert(!isFunctionComponent(element));
     assert(isContextProvider(element));
     assert(!isContextConsumer(element));
@@ -186,9 +194,28 @@ describe('isComponentType functions', () => {
     assert(!isTextNode(element));
     assert(!isDOMElementOrFragment(element));
     assert(!isForwardRef(element));
+    assert(!isMemo(element));
     assert(!isFunctionComponent(element));
     assert(!isContextProvider(element));
     assert(isContextConsumer(element));
+  });
+
+  it('Identifies memoized component correctly', () => {
+    // eslint-disable-next-line react/display-name
+    const Component = memo(({ text }: IProps) => {
+      return <div>{text}</div>;
+    });
+
+    const element = <Component text="test" />;
+
+    assert(isElement(element));
+    assert(!isTextNode(element));
+    assert(!isDOMElementOrFragment(element));
+    assert(!isForwardRef(element));
+    assert(isMemo(element));
+    assert(!isFunctionComponent(element));
+    assert(!isContextProvider(element));
+    assert(!isContextConsumer(element));
   });
 
   describe('isReactCompositeComponent', () => {

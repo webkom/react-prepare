@@ -11,6 +11,7 @@ import {
   ElementType,
   ExoticElement,
   ForwardRefElement,
+  MemoElement,
   ReactNodeType,
 } from './types';
 
@@ -70,13 +71,21 @@ export function isForwardRef<P>(
   );
 }
 
+export function isMemo<P>(element: ElementType<P>): element is MemoElement<P> {
+  return (
+    isExoticComponent(element) &&
+    element.type.$$typeof.toString() === 'Symbol(react.memo)'
+  );
+}
+
 export function isFunctionComponent<P>(
   element: ElementType<P>,
 ): element is FunctionComponentElement<P> {
   return (
     !isTextNode(element) &&
     typeof element.type === 'function' &&
-    !('render' in element.type.prototype)
+    (element.type.prototype === undefined ||
+      !('render' in element.type.prototype))
   );
 }
 

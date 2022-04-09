@@ -23,6 +23,7 @@ import {
   isForwardRef,
   isFunctionComponent,
   isCompositeComponent,
+  isMemo,
 } from './utils/isComponentType';
 import ShallowRenderer from 'react-shallow-renderer';
 
@@ -158,7 +159,7 @@ async function prepareElement<
     return [element.type.render(element.props, element.ref), context];
   }
 
-  if (isFunctionComponent(element)) {
+  if (isMemo(element) || isFunctionComponent(element)) {
     const renderer = new ShallowRenderer();
 
     renderer._dispatcher.useContext = (suppliedContext: Context<unknown>) => {
