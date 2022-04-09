@@ -1,7 +1,5 @@
 /* eslint-disable */
-
-// This is a workaround to make mocha work with babel-compiled typescript.
-// For some reason it doesn't recognize .ts files when just using '--require @babel/register'
+// This makes mocha work with babel-compiled typescript.
 
 const register = require('@babel/register').default;
 
