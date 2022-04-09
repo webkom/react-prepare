@@ -2,7 +2,6 @@ import React, {
   Component,
   ComponentClass,
   ComponentElement,
-  ComponentState,
   Context,
   PropsWithChildren,
   ReactNode,
@@ -164,23 +163,10 @@ async function prepareElement<
 
     renderer._dispatcher.useContext = (suppliedContext: Context<unknown>) => {
       renderer._validateCurrentlyRenderingComponent();
-
-      const parentProvider = context._providers?.get(suppliedContext.Provider);
-
-      return parentProvider
-        ? parentProvider.value
-        : (suppliedContext as Context<unknown> & { _currentValue: unknown })
-            ._currentValue;
+      return getContextValue(context, suppliedContext);
     };
     renderer._dispatcher.readContext = (suppliedContext: Context<unknown>) => {
-      renderer._validateCurrentlyRenderingComponent();
-
-      const parentProvider = context._providers?.get(suppliedContext.Provider);
-
-      return parentProvider
-        ? parentProvider.value
-        : (suppliedContext as Context<unknown> & { _currentValue: unknown })
-            ._currentValue;
+      return getContextValue(context, suppliedContext);
     };
 
     renderer.render(element);
