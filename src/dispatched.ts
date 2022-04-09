@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 
 import prepared from './prepared';
 import { PrepareFn } from './utils/types';
-import { ComponentClass } from 'react';
+import { ComponentType } from 'react';
 
 const storeShape = PropTypes.shape({
   dispatch: PropTypes.func.isRequired,
@@ -17,7 +17,7 @@ const dispatched =
     prepareUsingDispatch: (props: P, dispatch: unknown) => Promise<void>,
     opts: DispatchedOptions = {},
   ) =>
-  (OriginalComponent: ComponentClass<P>) => {
+  (OriginalComponent: ComponentType<P>) => {
     const prepare: PrepareFn<P> = (props, context) =>
       prepareUsingDispatch(props, context?.store?.dispatch);
 

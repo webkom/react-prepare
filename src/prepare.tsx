@@ -1,7 +1,7 @@
 import React, {
-  CElement,
   Component,
   ComponentClass,
+  ComponentElement,
   ComponentState,
   Context,
   PropsWithChildren,
@@ -29,7 +29,7 @@ import ShallowRenderer from 'react-shallow-renderer';
 
 const updater: Updater = {
   enqueueSetState<P, S extends Map<unknown, unknown> = Map<unknown, unknown>>(
-    publicInstance: PrepareComponent<P, S>,
+    publicInstance: Component<P, S>,
     partialState: ((state: S, props: P) => S) | S,
     callback: () => void,
   ): void {
@@ -82,11 +82,8 @@ function renderCompositeElementInstance<P>(
   return [instance.render(), childContext];
 }
 
-async function prepareCompositeElement<
-  P,
-  T extends Component<P, ComponentState>,
->(
-  { type, props }: CElement<P, T>,
+async function prepareCompositeElement<P>(
+  { type, props }: ComponentElement<P, Component<P>>,
   errorHandler: ErrorHandler,
   context: PrepareContext,
 ): Promise<

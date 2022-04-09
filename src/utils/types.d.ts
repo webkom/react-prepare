@@ -95,7 +95,8 @@ export interface Updater {
 }
 
 export type PrepareComponent<P, S> = {
-  -readonly [K in keyof Component<P, S>]: Component<P, S>[K];
+  -readonly // we need to write to these readonly values
+  [K in keyof Component<P, S>]: Component<P, S>[K];
 } & {
   getChildContext?: () => PrepareContext;
   updater: Updater;
