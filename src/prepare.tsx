@@ -3,6 +3,7 @@ import React, {
   Component,
   ComponentClass,
   ComponentState,
+  Context,
   PropsWithChildren,
   ReactNode,
 } from 'react';
@@ -10,6 +11,7 @@ import isReactCompositeComponent from './utils/isReactCompositeComponent';
 import isThenable from './utils/isThenable';
 import { isPrepared, getPrepare, shouldAwaitOnSsr } from './prepared';
 import {
+  ActualContext,
   PrepareComponent,
   PrepareContext,
   ReactNodeType,
@@ -46,7 +48,7 @@ const updater: Updater = {
 
 function createCompositeElementInstance<P>(
   { type: CompositeComponent, props }: { type: ComponentClass<P>; props: P },
-  context: PrepareContext<P>,
+  context: PrepareContext,
 ) {
   const instance = new CompositeComponent(props, context) as PrepareComponent<
     P,
@@ -71,8 +73,8 @@ function createCompositeElementInstance<P>(
 
 function renderCompositeElementInstance<P>(
   instance: PrepareComponent<P, unknown>,
-  context: PrepareContext<P> = {},
-): [ReactNode, PrepareContext<P>] {
+  context: PrepareContext = {},
+): [ReactNode, PrepareContext] {
   const childContext = {
     ...context,
     ...(instance.getChildContext ? instance.getChildContext() : {}),
@@ -86,11 +88,11 @@ async function prepareCompositeElement<
 >(
   { type, props }: CElement<P, T>,
   errorHandler: ErrorHandler,
-  context: PrepareContext<P>,
+  context: PrepareContext,
 ): Promise<
   [
     children: null | ReactNode | ReactNode[],
-    context: PrepareContext<P>,
+    context: PrepareContext,
     preparePromise?: Promise<void>,
   ]
 > {
@@ -109,16 +111,27 @@ async function prepareCompositeElement<
   return [...renderCompositeElementInstance(instance, context), preparePromise];
 }
 
+const getContextValue = (
+  context: PrepareContext,
+  suppliedContext: Context<unknown>,
+) => {
+  const parentProvider = context._providers?.get(suppliedContext.Provider);
+
+  return parentProvider
+    ? parentProvider.value
+    : (suppliedContext as ActualContext)._currentValue;
+};
+
 async function prepareElement<
   P extends PropsWithChildren<unknown & { value?: PropsWithChildren<unknown> }>,
 >(
   element: ReactNodeType<P>,
   errorHandler: ErrorHandler,
-  context: PrepareContext<P>,
+  context: PrepareContext,
 ): Promise<
   [
     children: null | ReactNode | ReactNode[],
-    context: PrepareContext<P>,
+    context: PrepareContext,
     preparePromise?: Promise<void>,
   ]
 > {
@@ -132,18 +145,14 @@ async function prepareElement<
 
   if (isContextProvider(element)) {
     const _providers = new Map(context._providers);
-    _providers.set(element.type._context.Provider, element.props);
+    _providers.set(element.type._context.Provider, {
+      value: element.props.value,
+    });
     return [element.props.children, { ...context, _providers }];
   }
 
   if (isContextConsumer(element)) {
-    const parentProvider = context._providers?.get(
-      element.type._context.Provider,
-    );
-
-    const value = parentProvider
-      ? parentProvider.value
-      : element.type._context._currentValue;
+    const value = getContextValue(context, element.type._context);
 
     const consumerFunc = element.props.children;
     return [consumerFunc(value), context];
@@ -155,6 +164,28 @@ async function prepareElement<
 
   if (isFunctionComponent(element)) {
     const renderer = new ShallowRenderer();
+
+    renderer._dispatcher.useContext = (suppliedContext: Context<unknown>) => {
+      renderer._validateCurrentlyRenderingComponent();
+
+      const parentProvider = context._providers?.get(suppliedContext.Provider);
+
+      return parentProvider
+        ? parentProvider.value
+        : (suppliedContext as Context<unknown> & { _currentValue: unknown })
+            ._currentValue;
+    };
+    renderer._dispatcher.readContext = (suppliedContext: Context<unknown>) => {
+      renderer._validateCurrentlyRenderingComponent();
+
+      const parentProvider = context._providers?.get(suppliedContext.Provider);
+
+      return parentProvider
+        ? parentProvider.value
+        : (suppliedContext as Context<unknown> & { _currentValue: unknown })
+            ._currentValue;
+    };
+
     renderer.render(element);
     const result = renderer.getRenderOutput();
     return [result, context];
@@ -176,7 +207,7 @@ interface PrepareOptions {
 async function prepare<P = unknown>(
   element: ReactNodeType<P>,
   options: PrepareOptions = {},
-  context: PrepareContext<P> = {},
+  context: PrepareContext = {},
 ): Promise<void> {
   const {
     errorHandler = (error) => {

@@ -8,7 +8,6 @@ import {
   ForwardedRef,
   ForwardRefRenderFunction,
   FunctionComponentElement,
-  PropsWithChildren,
   Provider,
   ReactChild,
   ReactElement,
@@ -17,11 +16,9 @@ import {
 } from 'react';
 import { __REACT_PREPARE__ } from '../constants';
 
-export interface PrepareContext<
-  P extends PropsWithChildren<unknown> = PropsWithChildren<unknown>,
-> {
+export interface PrepareContext {
   store?: { dispatch: unknown };
-  _providers?: Map<Provider<unknown>, P>;
+  _providers?: Map<Provider<unknown>, { value: unknown }>;
 }
 
 export type PreparedComponentType<P> = ComponentClass<P> & {
@@ -33,7 +30,7 @@ export type PreparedComponentType<P> = ComponentClass<P> & {
 
 export type PrepareFn<P> = (
   props: P,
-  context?: PrepareContext<P>,
+  context?: PrepareContext,
 ) => Promise<void>;
 
 export type ActualContext = Context<unknown> & {
@@ -100,6 +97,6 @@ export interface Updater {
 export type PrepareComponent<P, S> = {
   -readonly [K in keyof Component<P, S>]: Component<P, S>[K];
 } & {
-  getChildContext?: () => PrepareContext<P>;
+  getChildContext?: () => PrepareContext;
   updater: Updater;
 };

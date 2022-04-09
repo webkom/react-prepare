@@ -4,6 +4,7 @@ import sinon from 'sinon';
 import React, {
   MutableRefObject,
   PropsWithChildren,
+  useContext,
   useEffect,
   useState,
 } from 'react';
@@ -346,6 +347,54 @@ describe('prepare', () => {
     assert.equal(
       html,
       'initial testing initial another',
+      'renders with correct html',
+    );
+  });
+
+  it('Should support useContext()', async () => {
+    const MyContext = React.createContext('initial');
+    const AnotherContext = React.createContext<string>('');
+
+    const MyContextConsumer = (
+      props: PropsWithChildren<{ expectedData: string }>,
+    ) => {
+      const data = useContext(MyContext);
+      assert.equal(data, props.expectedData);
+      return (
+        <p>
+          My:{data}
+          {props.children}
+        </p>
+      );
+    };
+    const AnotherContextConsumer = (props: { expectedData: string }) => {
+      const data = useContext(AnotherContext);
+      assert.equal(data, props.expectedData);
+      return <p>Another:{data}</p>;
+    };
+    const App = () => (
+      <>
+        <MyContextConsumer expectedData="initial" />
+        <MyContext.Provider value="testing">
+          <MyContextConsumer expectedData="testing">
+            <MyContextConsumer expectedData="testing" />
+          </MyContextConsumer>
+          <AnotherContextConsumer expectedData="" />
+        </MyContext.Provider>
+        <AnotherContext.Provider value="another">
+          <MyContext.Provider value="myOther">
+            <MyContextConsumer expectedData="myOther" />
+            <AnotherContextConsumer expectedData="another" />
+          </MyContext.Provider>
+        </AnotherContext.Provider>
+      </>
+    );
+    await prepare(<App />);
+
+    const html = renderToStaticMarkup(<App />);
+    assert.equal(
+      html,
+      '<p>My:initial</p><p>My:testing<p>My:testing</p></p><p>Another:</p><p>My:myOther</p><p>Another:another</p>',
       'renders with correct html',
     );
   });
