@@ -2,7 +2,7 @@ const { describe, it } = global;
 import t from 'tcomb';
 import sinon from 'sinon';
 import equal from 'deep-equal';
-import * as React from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 import { renderToStaticMarkup } from 'react-dom/server';
 import prepared from '../prepared';
@@ -124,14 +124,13 @@ describe('prepare', () => {
     const innerPrepare = async () =>
       new Promise((resolve) => innerFunc() && resolve());
 
-    const Outer = prepared(outerPrepare)(
-      ({ text, children }) => (
-        <div>
-          {text} <div>{children ? children : null}</div>
-        </div>
-      ),
-      { hasSsrDataDeps: false },
-    );
+    const Outer = prepared(outerPrepare, {
+      awaitOnSsr: false,
+    })(({ text, children }) => (
+      <div>
+        {text} <div>{children ? children : null}</div>
+      </div>
+    ));
     const Inner = prepared(innerPrepare)(({ text, children }) => (
       <div>
         {text} <div>{children ? children : null}</div>
