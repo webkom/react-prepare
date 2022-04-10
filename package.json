@@ -46,7 +46,6 @@
     "redux-thunk": "^2.4.1",
     "rimraf": "^2.5.4",
     "sinon": "^13.0.1",
-    "source-map-support": "^0.4.5",
     "tcomb": "^3.2.15"
   },
   "peerDependencies": {
