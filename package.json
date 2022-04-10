@@ -8,7 +8,7 @@
     "lint": "yarn lint:eslint && yarn lint:prettier",
     "lint:eslint": "node_modules/.bin/eslint src/**/*.js",
     "lint:prettier": "prettier '**/*.{js,css,md,ts,tsx}' --check",
-    "build": "node_modules/.bin/babel src -d dist --source-maps",
+    "build": "babel src -d dist --source-maps --extensions '.js'",
     "test": "node_modules/.bin/mocha --compilers js:babel-register src/**/*.spec.js",
     "make": "yarn run lint && yarn run clean && yarn run build && yarn run test",
     "prettier": "prettier '**/*.{js,css,md,ts,tsx,json}' --write"
@@ -20,14 +20,15 @@
   "author": "Elie Rotenberg <elie@rotenberg.io>",
   "license": "MIT",
   "devDependencies": {
-    "babel-cli": "^6.22.2",
-    "babel-eslint": "^7.0.0",
-    "babel-plugin-transform-class-properties": "^6.18.0",
-    "babel-plugin-transform-object-rest-spread": "^6.16.0",
-    "babel-plugin-transform-runtime": "^6.15.0",
-    "babel-preset-latest": "^6.16.0",
-    "babel-preset-react": "^6.16.0",
-    "babel-register": "^6.22.0",
+    "@babel/cli": "^7.17.6",
+    "@babel/core": "^7.17.8",
+    "@babel/eslint-parser": "^7.17.0",
+    "@babel/plugin-proposal-class-properties": "^7.16.7",
+    "@babel/plugin-proposal-object-rest-spread": "^7.17.3",
+    "@babel/plugin-transform-runtime": "^7.17.0",
+    "@babel/preset-env": "^7.16.11",
+    "@babel/preset-react": "^7.16.7",
+    "@babel/register": "^7.17.7",
     "deep-equal": "^1.0.1",
     "eslint": "^3.19.0",
     "eslint-config-prettier": "^2.0.0",
@@ -54,6 +55,6 @@
     "react": "^16.8.2"
   },
   "dependencies": {
-    "babel-runtime": "^6.11.6"
+    "@babel/runtime-corejs2": "^7.17.8"
   }
 }

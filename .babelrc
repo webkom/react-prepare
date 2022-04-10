@@ -1,12 +1,12 @@
 {
-  "ignore": "dist/**/*",
+  "ignore": ["dist/**/*"],
   "plugins": [
-    "transform-object-rest-spread",
-    "transform-class-properties",
-    "transform-runtime"
+    "@babel/plugin-proposal-object-rest-spread",
+    "@babel/plugin-proposal-class-properties",
+    "@babel/plugin-transform-runtime"
   ],
   "presets": [
-    "latest",
-    "react"
+    "@babel/preset-env",
+    "@babel/preset-react"
   ]
 }

@@ -29,7 +29,7 @@
     "node": true,
     "es6": true
   },
-  "parser": "babel-eslint",
+  "parser": "@babel/eslint-parser",
   "plugins": ["babel", "react"],
   "extends": [
     "prettier",
