@@ -25,8 +25,8 @@ describe('prepare', () => {
           'sets props on instance',
         );
         t.assert(this.state === null, 'sets state on instance');
-        t.assert(this.updater !== undefined, 'sets updater on instance'); // eslint-disable-line no-undefined
-        t.assert(equal(this.refs, {}), 'sets refs on instance');
+        t.assert(this.updater !== undefined, 'sets updater on instance');
+        t.assert(equal(this.refs, {}), 'sets refs on instance'); // eslint-disable-line react/no-string-refs
         t.assert(equal(this.context, {}), 'sets context on instance');
         return null;
       }
@@ -46,6 +46,7 @@ describe('prepare', () => {
         };
       }
 
+      // eslint-disable-next-line react/no-deprecated
       componentWillMount() {
         this.setState({ message: 'Updated message' });
       }
@@ -180,10 +181,12 @@ describe('prepare', () => {
     t.assert(doAsyncSideEffect.calledThrice, 'Should be called 3 times');
   });
   it('Should support <React.Forwardref />', async () => {
+    // eslint-disable-next-line react/display-name
     const RefSetter = React.forwardRef((props, ref) => {
       ref.current = 'hi';
       return (
         <p id="test">
+          {/* eslint-disable-next-line react/prop-types */}
           {props.children} - {ref.current}
         </p>
       );
