@@ -4,7 +4,7 @@
   "description": "Prepare you app state for async server-side rendering and more!",
   "main": "dist/index.js",
   "scripts": {
-    "clean": "node_modules/.bin/rimraf dist",
+    "clean": "rimraf dist",
     "lint": "yarn lint:eslint && yarn lint:prettier",
     "lint:eslint": "eslint src/**/*.js",
     "lint:prettier": "prettier '**/*.{js,css,md,ts,tsx}' --check",
@@ -44,7 +44,7 @@
     "react-redux": "^5.1.2",
     "redux": "^4.1.2",
     "redux-thunk": "^2.4.1",
-    "rimraf": "^2.5.4",
+    "rimraf": "^3.0.2",
     "sinon": "^13.0.1",
     "tcomb": "^3.2.15"
   },
