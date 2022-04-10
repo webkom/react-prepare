@@ -2,7 +2,7 @@ const { describe, it } = global;
 import t from 'tcomb';
 import sinon from 'sinon';
 import equal from 'deep-equal';
-import * as React from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 import { renderToStaticMarkup } from 'react-dom/server';
 import prepared from '../prepared';
