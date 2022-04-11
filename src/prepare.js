@@ -66,23 +66,20 @@ async function prepareCompositeElement({ type, props }, errorHandler, context) {
   ];
 }
 
-function prepareElement(element, errorHandler, context) {
+async function prepareElement(element, errorHandler, context) {
   switch (getElementType(element)) {
     case ELEMENT_TYPE.NOTHING:
     case ELEMENT_TYPE.TEXT_NODE: {
-      return Promise.resolve([null, context]);
+      return [null, context];
     }
     case ELEMENT_TYPE.DOM_ELEMENT:
     case ELEMENT_TYPE.FRAGMENT: {
-      return Promise.resolve([element.props.children, context]);
+      return [element.props.children, context];
     }
     case ELEMENT_TYPE.CONTEXT_PROVIDER: {
       const _providers = new Map(context._providers);
       _providers.set(element.type._context.Provider, element.props);
-      return Promise.resolve([
-        element.props.children,
-        { ...context, _providers },
-      ]);
+      return [element.props.children, { ...context, _providers }];
     }
     case ELEMENT_TYPE.CONTEXT_CONSUMER: {
       const parentProvider =
@@ -93,19 +90,16 @@ function prepareElement(element, errorHandler, context) {
         : element.type._context.currentValue;
 
       const consumerFunc = element.props.children;
-      return Promise.resolve([consumerFunc(value), context]);
+      return [consumerFunc(value), context];
     }
     case ELEMENT_TYPE.FORWARD_REF: {
-      return Promise.resolve([
-        element.type.render(element.props, element.ref),
-        context,
-      ]);
+      return [element.type.render(element.props, element.ref), context];
     }
     case ELEMENT_TYPE.MEMO: {
       throw new Error('Memo elements are not supported yet');
     }
     case ELEMENT_TYPE.FUNCTION_COMPONENT: {
-      return Promise.resolve([element.type(element.props), context]);
+      return [element.type(element.props), context];
     }
     case ELEMENT_TYPE.CLASS_COMPONENT: {
       return prepareCompositeElement(element, errorHandler, context);
