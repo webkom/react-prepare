@@ -1,7 +1,7 @@
 const { describe, it } = global;
 import assert from 'assert/strict';
 import sinon from 'sinon';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { renderToStaticMarkup } from 'react-dom/server';
 import prepared from '../prepared';
@@ -292,6 +292,60 @@ describe('prepare', () => {
     );
     const html = renderToStaticMarkup(<App text="foo" />);
     assert.equal(html, '<div>foo</div>', 'renders with correct html');
+  });
+
+  const testPrepareComponent = async (componentCreator, expectedText) => {
+    const doAsyncSideEffect = sinon.spy(async () => {});
+    const prepareUsingProps = sinon.spy(async ({ text }) => {
+      await doAsyncSideEffect(text);
+    });
+    const ComponentTester = prepared(prepareUsingProps)(({ text }) => (
+      <div>{text}</div>
+    ));
+    const Component = componentCreator(ComponentTester);
+    await prepare(<Component />);
+
+    assert(
+      prepareUsingProps.calledOnce,
+      'prepareUsingProps has been called once',
+    );
+    assert(
+      prepareUsingProps.calledWith({ text: expectedText }),
+      'prepareUsingProps has been called with correct props',
+    );
+    assert(
+      doAsyncSideEffect.calledOnce,
+      'doAsyncSideEffect has been called once',
+    );
+
+    // if it doesn't render to correct html, the test is likely set up wrong
+    const html = renderToStaticMarkup(<Component />);
+    assert.equal(
+      html,
+      `<div>${expectedText}</div>`,
+      'renders with correct html',
+    );
+  };
+
+  it('Should support useState() hook', async () => {
+    await testPrepareComponent(
+      // eslint-disable-next-line react/display-name
+      (Test) => () => {
+        const [state] = useState('initial');
+        return <Test text={state} />;
+      },
+      'initial',
+    );
+  });
+
+  it('Should ignore useEffect() hooks', async () => {
+    const HookComponent = () => {
+      useEffect(() => {
+        throw Error('Should not call the useEffect hook');
+      });
+      return <div>test</div>;
+    };
+    await prepare(<HookComponent />);
   });
 
   it('Should support React Contexts', async () => {
