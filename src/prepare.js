@@ -3,6 +3,7 @@ import React from 'react';
 import isThenable from './utils/isThenable';
 import { isPrepared, getPrepare, shouldAwaitOnSsr } from './prepared';
 import getElementType, { ELEMENT_TYPE } from './utils/getElementType';
+import createDispatcher from './utils/createDispatcher';
 
 const updater = {
   enqueueSetState(publicInstance, partialState, callback) {
@@ -43,12 +44,17 @@ function createCompositeElementInstance(
 }
 
 function renderCompositeElementInstance(instance, context = {}) {
-  const childContext = Object.assign(
-    {},
-    context,
-    instance.getChildContext ? instance.getChildContext() : {},
-  );
+  const childContext = {
+    ...context,
+    ...(instance.getChildContext ? instance.getChildContext() : {}),
+  };
   return [instance.render(), childContext];
+}
+
+function renderFunctionElementInstance(element, context = {}) {
+  React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentDispatcher.current =
+    createDispatcher();
+  return element.type(element.props);
 }
 
 async function prepareCompositeElement({ type, props }, errorHandler, context) {
@@ -100,7 +106,7 @@ async function prepareElement(element, errorHandler, context) {
       throw new Error('Memo elements are not supported yet');
     }
     case ELEMENT_TYPE.FUNCTION_COMPONENT: {
-      return [element.type(element.props), context];
+      return [renderFunctionElementInstance(element, context), context];
     }
     case ELEMENT_TYPE.CLASS_COMPONENT: {
       return prepareCompositeElement(element, errorHandler, context);
