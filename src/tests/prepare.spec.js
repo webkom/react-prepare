@@ -1,7 +1,7 @@
 const { describe, it } = global;
 import assert from 'assert/strict';
 import sinon from 'sinon';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { memo, useContext, useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { renderToStaticMarkup } from 'react-dom/server';
 import prepared from '../prepared';
@@ -399,6 +399,29 @@ describe('prepare', () => {
       html,
       '<p>My:initial</p><p>My:testing<p>My:testing</p></p><p>Another:</p><p>My:myOther</p><p>Another:another</p>',
       'renders with correct html',
+    );
+  });
+
+  it('Should support React.memo()', async () => {
+    await testPrepareComponent(
+      // eslint-disable-next-line react/display-name
+      (Test) => () => {
+        const Memoized = memo(Test);
+        return <Memoized text="foo" />;
+      },
+      'foo',
+    );
+  });
+
+  it('Should support React.memo() with a memoized function component', async () => {
+    await testPrepareComponent(
+      // eslint-disable-next-line react/display-name
+      (Tester) => () => {
+        // eslint-disable-next-line react/display-name,react/prop-types
+        const Memoized = memo(({ text }) => <Tester text={text} />);
+        return <Memoized text="foo" />;
+      },
+      'foo',
     );
   });
 

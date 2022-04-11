@@ -52,10 +52,10 @@ function renderCompositeElementInstance(instance, context = {}) {
   return [instance.render(), childContext];
 }
 
-function renderFunctionElementInstance(element, context = {}) {
+function renderFunctionElementInstance({ type, props }, context = {}) {
   React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentDispatcher.current =
     createDispatcher(context);
-  return element.type(element.props);
+  return type(props);
 }
 
 async function prepareCompositeElement({ type, props }, errorHandler, context) {
@@ -99,7 +99,7 @@ async function prepareElement(element, errorHandler, context) {
       return [element.type.render(element.props, element.ref), context];
     }
     case ELEMENT_TYPE.MEMO: {
-      throw new Error('Memo elements are not supported yet');
+      return prepareElement({ ...element, type: element.type.type });
     }
     case ELEMENT_TYPE.FUNCTION_COMPONENT: {
       return [renderFunctionElementInstance(element, context), context];
