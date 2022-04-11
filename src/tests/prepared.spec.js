@@ -1,7 +1,6 @@
-const { describe, it } = global;
+const { describe, it, beforeEach } = global;
 import sinon from 'sinon';
-import t from 'tcomb';
-import equal from 'deep-equal';
+import assert from 'assert/strict';
 import React, { Component, PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -32,135 +31,72 @@ describe('prepared', () => {
     text: PropTypes.string,
   };
 
-  it('prepared Composite Component', async () => {
-    const doAsyncSideEffect = sinon.spy(async () => {});
-    const prepareUsingProps = sinon.spy(async ({ text }) => {
+  let doAsyncSideEffect;
+  let prepareUsingProps;
+
+  beforeEach(() => {
+    doAsyncSideEffect = sinon.spy(async () => {});
+    prepareUsingProps = sinon.spy(async ({ text }) => {
       await doAsyncSideEffect(text);
     });
+  });
+
+  const testComponent = async (OriginalComponent, PreparedComponent) => {
+    assert(!isPrepared(OriginalComponent), 'OriginalComponent is not prepared');
+    assert(isPrepared(PreparedComponent), 'PreparedComponent is prepared');
+    const prepare = getPrepare(PreparedComponent);
+    assert.equal(
+      typeof prepare,
+      'function',
+      'getPrepare(PreparedCompositeComponent) is a function',
+    );
+    await prepare({ text: 'foo' });
+    assert(
+      prepareUsingProps.calledOnce,
+      'prepareUsingProps has been called exactly once',
+    );
+    assert.deepEqual(
+      prepareUsingProps.getCall(0).args,
+      [{ text: 'foo' }],
+      'prepareUsingProps has been called with correct arguments',
+    );
+    assert(
+      doAsyncSideEffect.calledOnce,
+      'doAsyncSideEffect has been called exactly once',
+    );
+    assert.deepEqual(
+      doAsyncSideEffect.getCall(0).args,
+      ['foo'],
+      'doAsyncSideEffect has been called with correct arguments',
+    );
+    const html = renderToStaticMarkup(<PreparedComponent text="foo" />);
+    assert.equal(html, '<div>foo</div>', 'renders with correct html');
+  };
+
+  it('prepared Composite Component', async () => {
     const PreparedCompositeComponent = prepared(prepareUsingProps, {
       pure: false,
     })(OriginalCompositeComponent);
-    t.assert(
-      !isPrepared(OriginalCompositeComponent),
-      'OriginalComponent is not prepared',
-    );
-    t.assert(
-      isPrepared(PreparedCompositeComponent),
-      'PreparedComponent is prepared',
-    );
-    const prepare = getPrepare(PreparedCompositeComponent);
-    t.assert(
-      typeof prepare === 'function',
-      'getPrepare(PreparedCompositeComponent) is a function',
-    );
-    await prepare({ text: 'foo' });
-    t.assert(
-      prepareUsingProps.calledOnce,
-      'prepareUsingProps has been called exactly once',
-    );
-    t.assert(
-      equal(prepareUsingProps.getCall(0).args, [{ text: 'foo' }]),
-      'prepareUsingProps has been called with correct arguments',
-    );
-    t.assert(
-      doAsyncSideEffect.calledOnce,
-      'doAsyncSideEffect has been called exactly once',
-    );
-    t.assert(
-      equal(doAsyncSideEffect.getCall(0).args, ['foo']),
-      'doAsyncSideEffect has been called with correct arguments',
-    );
-    const html = renderToStaticMarkup(
-      <PreparedCompositeComponent text="foo" />,
-    );
-    t.assert(html === '<div>foo</div>', 'renders with correct html');
+
+    await testComponent(OriginalCompositeComponent, PreparedCompositeComponent);
   });
 
   it('prepared Composite Pure Component', async () => {
-    const doAsyncSideEffect = sinon.spy(async () => {});
-    const prepareUsingProps = sinon.spy(async ({ text }) => {
-      await doAsyncSideEffect(text);
-    });
     const PreparedCompositeComponent = prepared(prepareUsingProps)(
       OriginalCompositePureComponent,
     );
-    t.assert(
-      !isPrepared(OriginalCompositePureComponent),
-      'OriginalComponent is not prepared',
+
+    await testComponent(
+      OriginalCompositePureComponent,
+      PreparedCompositeComponent,
     );
-    t.assert(
-      isPrepared(PreparedCompositeComponent),
-      'PreparedComponent is prepared',
-    );
-    const prepare = getPrepare(PreparedCompositeComponent);
-    t.assert(
-      typeof prepare === 'function',
-      'getPrepare(PreparedCompositeComponent) is a function',
-    );
-    await prepare({ text: 'foo' });
-    t.assert(
-      prepareUsingProps.calledOnce,
-      'prepareUsingProps has been called exactly once',
-    );
-    t.assert(
-      equal(prepareUsingProps.getCall(0).args, [{ text: 'foo' }]),
-      'prepareUsingProps has been called with correct arguments',
-    );
-    t.assert(
-      doAsyncSideEffect.calledOnce,
-      'doAsyncSideEffect has been called exactly once',
-    );
-    t.assert(
-      equal(doAsyncSideEffect.getCall(0).args, ['foo']),
-      'doAsyncSideEffect has been called with correct arguments',
-    );
-    const html = renderToStaticMarkup(
-      <PreparedCompositeComponent text="foo" />,
-    );
-    t.assert(html === '<div>foo</div>', 'renders with correct html');
   });
 
   it('prepared Arrow Component', async () => {
-    const doAsyncSideEffect = sinon.spy(async () => {});
-    const prepareUsingProps = sinon.spy(async ({ text }) => {
-      await doAsyncSideEffect(text);
-    });
     const PreparedCompositeComponent = prepared(prepareUsingProps)(
       OriginalArrowComponent,
     );
-    t.assert(
-      !isPrepared(OriginalArrowComponent),
-      'OriginalComponent is not prepared',
-    );
-    t.assert(
-      isPrepared(PreparedCompositeComponent),
-      'PreparedComponent is prepared',
-    );
-    const prepare = getPrepare(PreparedCompositeComponent);
-    t.assert(
-      typeof prepare === 'function',
-      'getPrepare(PreparedCompositeComponent) is a function',
-    );
-    await prepare({ text: 'foo' });
-    t.assert(
-      prepareUsingProps.calledOnce,
-      'prepareUsingProps has been called exactly once',
-    );
-    t.assert(
-      equal(prepareUsingProps.getCall(0).args, [{ text: 'foo' }]),
-      'prepareUsingProps has been called with correct arguments',
-    );
-    t.assert(
-      doAsyncSideEffect.calledOnce,
-      'doAsyncSideEffect has been called exactly once',
-    );
-    t.assert(
-      equal(doAsyncSideEffect.getCall(0).args, ['foo']),
-      'doAsyncSideEffect has been called with correct arguments',
-    );
-    const html = renderToStaticMarkup(
-      <PreparedCompositeComponent text="foo" />,
-    );
-    t.assert(html === '<div>foo</div>', 'renders with correct html');
+
+    await testComponent(OriginalArrowComponent, PreparedCompositeComponent);
   });
 });

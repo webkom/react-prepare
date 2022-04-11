@@ -1,6 +1,6 @@
 const { describe, it } = global;
+import assert from 'assert/strict';
 import url from 'url';
-import t from 'tcomb';
 import React from 'react';
 import PropTypes from 'prop-types';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -178,9 +178,9 @@ describe('dispatched', () => {
 
       await prepare(app);
       const html = renderToStaticMarkup(app);
-      t.assert(
-        html ===
-          '<ul><li><div>echo /foo</div></li><li><div>echo /bar</div></li></ul>',
+      assert.equal(
+        html,
+        '<ul><li><div>echo /foo</div></li><li><div>echo /bar</div></li></ul>',
         'renders correct html',
       );
     } finally {
