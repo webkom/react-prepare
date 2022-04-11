@@ -1,7 +1,7 @@
 const { describe, it } = global;
 import assert from 'assert/strict';
 import sinon from 'sinon';
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { renderToStaticMarkup } from 'react-dom/server';
 import prepared from '../prepared';
@@ -346,6 +346,60 @@ describe('prepare', () => {
       return <div>test</div>;
     };
     await prepare(<HookComponent />);
+  });
+
+  it('Should support useContext() hook', async () => {
+    const MyContext = React.createContext('initial');
+    const AnotherContext = React.createContext('');
+
+    const MyContextConsumer = (props) => {
+      const data = useContext(MyContext);
+      assert.equal(data, props.expectedData);
+      return (
+        <p>
+          My:{data}
+          {props.children}
+        </p>
+      );
+    };
+    MyContextConsumer.propTypes = {
+      expectedData: PropTypes.string,
+      children: PropTypes.node,
+    };
+    const AnotherContextConsumer = (props) => {
+      const data = useContext(AnotherContext);
+      assert.equal(data, props.expectedData);
+      return <p>Another:{data}</p>;
+    };
+    AnotherContextConsumer.propTypes = {
+      expectedData: PropTypes.string,
+    };
+
+    const App = () => (
+      <>
+        <MyContextConsumer expectedData="initial" />
+        <MyContext.Provider value="testing">
+          <MyContextConsumer expectedData="testing">
+            <MyContextConsumer expectedData="testing" />
+          </MyContextConsumer>
+          <AnotherContextConsumer expectedData="" />
+        </MyContext.Provider>
+        <AnotherContext.Provider value="another">
+          <MyContext.Provider value="myOther">
+            <MyContextConsumer expectedData="myOther" />
+            <AnotherContextConsumer expectedData="another" />
+          </MyContext.Provider>
+        </AnotherContext.Provider>
+      </>
+    );
+    await prepare(<App />);
+
+    const html = renderToStaticMarkup(<App />);
+    assert.equal(
+      html,
+      '<p>My:initial</p><p>My:testing<p>My:testing</p></p><p>Another:</p><p>My:myOther</p><p>Another:another</p>',
+      'renders with correct html',
+    );
   });
 
   it('Should support React Contexts', async () => {
