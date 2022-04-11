@@ -12,12 +12,12 @@ const createDispatcher = (context) => ({
   useReducer: (reducer, initArg, initializer) => [
     !initializer ? initArg : initializer(initArg),
   ],
+  useMemo: (computeFunction) => computeFunction(),
   useCallback: () => {},
   useDebugValue: () => {},
   useImperativeHandle: () => {},
   useLayoutEffect: () => {},
   useInsertionEffect: () => {},
-  useMemo: () => {},
   useRef: () => {},
   useId: () => {},
   useTransition: () => {},

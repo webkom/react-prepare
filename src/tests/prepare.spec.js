@@ -5,6 +5,7 @@ import React, {
   memo,
   useContext,
   useEffect,
+  useMemo,
   useReducer,
   useState,
 } from 'react';
@@ -354,6 +355,19 @@ describe('prepare', () => {
           (initArg) => initArg + 'ized',
         );
         return <Tester text={state} />;
+      },
+      'initialized',
+    );
+  });
+
+  it('Should support useMemo() hook', async () => {
+    await testPrepareComponent(
+      // eslint-disable-next-line react/display-name
+      (Tester) => () => {
+        let a = 'initial';
+        let b = 'ized';
+        const value = useMemo(() => a + b, [a, b]);
+        return <Tester text={value} />;
       },
       'initialized',
     );
