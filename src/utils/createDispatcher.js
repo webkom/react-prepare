@@ -13,7 +13,7 @@ const createDispatcher = (context) => ({
     !initializer ? initArg : initializer(initArg),
   ],
   useMemo: (computeFunction) => computeFunction(),
-  useCallback: () => {},
+  useCallback: (callbackFunction) => () => callbackFunction(),
   useDebugValue: () => {},
   useImperativeHandle: () => {},
   useLayoutEffect: () => {},

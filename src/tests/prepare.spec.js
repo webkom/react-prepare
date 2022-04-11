@@ -3,6 +3,7 @@ import assert from 'assert/strict';
 import sinon from 'sinon';
 import React, {
   memo,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -368,6 +369,19 @@ describe('prepare', () => {
         let b = 'ized';
         const value = useMemo(() => a + b, [a, b]);
         return <Tester text={value} />;
+      },
+      'initialized',
+    );
+  });
+
+  it('Should support useCallback() hook', async () => {
+    await testPrepareComponent(
+      // eslint-disable-next-line react/display-name
+      (Tester) => () => {
+        let a = 'initial';
+        let b = 'ized';
+        const callback = useCallback(() => a + b, [a, b]);
+        return <Tester text={callback()} />;
       },
       'initialized',
     );
