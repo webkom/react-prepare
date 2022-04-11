@@ -35,6 +35,10 @@ function createCompositeElementInstance(
   if (instance.componentWillMount) {
     instance.componentWillMount();
   }
+
+  if (instance.UNSAFE_componentWillMount) {
+    instance.UNSAFE_componentWillMount();
+  }
   return instance;
 }
 

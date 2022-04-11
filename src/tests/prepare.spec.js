@@ -66,6 +66,34 @@ describe('prepare', () => {
     await prepare(<MessageBox />);
   });
 
+  it('supports state updates inside UNSAFE_componentWillMount', async () => {
+    class MessageBox extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = {
+          message: 'Hello',
+        };
+      }
+
+      UNSAFE_componentWillMount() {
+        this.setState({ message: 'Updated message' });
+      }
+
+      render() {
+        assert.deepEqual(
+          this.state,
+          { message: 'Updated message' },
+          'updates state on instance',
+        );
+        return null;
+      }
+    }
+
+    renderToStaticMarkup(<MessageBox />);
+
+    await prepare(<MessageBox />);
+  });
+
   it('Should throw exception', async () => {
     const doAsyncSideEffect = sinon.spy(async () => {
       throw new Error('Err');
