@@ -48,22 +48,19 @@ function renderCompositeElementInstance(instance, context = {}) {
 }
 
 async function prepareCompositeElement({ type, props }, errorHandler, context) {
-  let preparedPromise;
+  let preparePromise;
 
   if (isPrepared(type)) {
-    const p = getPrepare(type)(props, context);
-    if (isThenable(p)) {
-      preparedPromise = p.catch(errorHandler);
+    const prepareResult = getPrepare(type)(props, context);
+    if (isThenable(prepareResult)) {
+      preparePromise = prepareResult.catch(errorHandler);
       if (shouldAwaitOnSsr(type)) {
-        await preparedPromise;
+        await preparePromise;
       }
     }
   }
   const instance = createCompositeElementInstance({ type, props }, context);
-  return [
-    ...renderCompositeElementInstance(instance, context),
-    preparedPromise,
-  ];
+  return [...renderCompositeElementInstance(instance, context), preparePromise];
 }
 
 async function prepareElement(element, errorHandler, context) {
@@ -110,20 +107,23 @@ async function prepareElement(element, errorHandler, context) {
   }
 }
 
-function prepare(element, options = {}, context = {}) {
+async function prepare(element, options = {}, context = {}) {
   const {
     errorHandler = (error) => {
       throw error;
     },
   } = options;
-  return prepareElement(element, errorHandler, context).then(
-    ([children, childContext, p]) =>
-      Promise.all(
-        React.Children.toArray(children)
-          .map((child) => prepare(child, options, childContext))
-          .concat(p)
-          .filter(Boolean),
-      ),
+  const [children, childContext, preparePromise] = await prepareElement(
+    element,
+    errorHandler,
+    context,
+  );
+
+  // Recursively run prepare on children, and return a promise that resolves once all children are prepared.
+  return Promise.all(
+    React.Children.toArray(children)
+      .map((child) => prepare(child, options, childContext))
+      .concat(preparePromise || []),
   );
 }
 
