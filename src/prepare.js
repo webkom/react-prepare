@@ -1,8 +1,8 @@
 import React from 'react';
 
-import isReactCompositeComponent from './utils/isReactCompositeComponent';
 import isThenable from './utils/isThenable';
 import { isPrepared, getPrepare, shouldAwaitOnSsr } from './prepared';
+import getElementType, { ELEMENT_TYPE } from './utils/getElementType';
 
 const updater = {
   enqueueSetState(publicInstance, partialState, callback) {
@@ -67,48 +67,53 @@ async function prepareCompositeElement({ type, props }, errorHandler, context) {
 }
 
 function prepareElement(element, errorHandler, context) {
-  if (element === null || typeof element !== 'object') {
-    return Promise.resolve([null, context]);
-  }
-  const { type, props } = element;
+  switch (getElementType(element)) {
+    case ELEMENT_TYPE.NOTHING:
+    case ELEMENT_TYPE.TEXT_NODE: {
+      return Promise.resolve([null, context]);
+    }
+    case ELEMENT_TYPE.DOM_ELEMENT:
+    case ELEMENT_TYPE.FRAGMENT: {
+      return Promise.resolve([element.props.children, context]);
+    }
+    case ELEMENT_TYPE.CONTEXT_PROVIDER: {
+      const _providers = new Map(context._providers);
+      _providers.set(element.type._context.Provider, element.props);
+      return Promise.resolve([
+        element.props.children,
+        { ...context, _providers },
+      ]);
+    }
+    case ELEMENT_TYPE.CONTEXT_CONSUMER: {
+      const parentProvider =
+        context._providers &&
+        context._providers.get(element.type._context.Provider);
+      const value = parentProvider
+        ? parentProvider.value
+        : element.type._context.currentValue;
 
-  if (typeof type === 'string' || typeof type === 'symbol') {
-    return Promise.resolve([props.children, context]);
+      const consumerFunc = element.props.children;
+      return Promise.resolve([consumerFunc(value), context]);
+    }
+    case ELEMENT_TYPE.FORWARD_REF: {
+      return Promise.resolve([
+        element.type.render(element.props, element.ref),
+        context,
+      ]);
+    }
+    case ELEMENT_TYPE.MEMO: {
+      throw new Error('Memo elements are not supported yet');
+    }
+    case ELEMENT_TYPE.FUNCTION_COMPONENT: {
+      return Promise.resolve([element.type(element.props), context]);
+    }
+    case ELEMENT_TYPE.CLASS_COMPONENT: {
+      return prepareCompositeElement(element, errorHandler, context);
+    }
+    default: {
+      throw new Error(`Unsupported element type: ${element}`);
+    }
   }
-
-  if (
-    typeof type === 'object' &&
-    type.$$typeof.toString() === 'Symbol(react.provider)'
-  ) {
-    const _providers = new Map(context._providers);
-    _providers.set(type._context.Provider, props);
-    return Promise.resolve([props.children, { ...context, _providers }]);
-  }
-
-  if (
-    typeof type === 'object' &&
-    type.$$typeof.toString() === 'Symbol(react.context)'
-  ) {
-    const parentProvider =
-      context._providers && context._providers.get(type._context.Provider);
-    const value = parentProvider
-      ? parentProvider.value
-      : type._context.currentValue;
-
-    const consumerFunc = props.children;
-    return Promise.resolve([consumerFunc(value), context]);
-  }
-
-  if (
-    typeof type === 'object' &&
-    type.$$typeof.toString() === 'Symbol(react.forward_ref)'
-  ) {
-    return Promise.resolve([type.render(props, element.ref), context]);
-  }
-  if (!isReactCompositeComponent(type)) {
-    return Promise.resolve([type(props), context]);
-  }
-  return prepareCompositeElement(element, errorHandler, context);
 }
 
 function prepare(element, options = {}, context = {}) {
