@@ -3,6 +3,7 @@ import React from 'react';
 import isThenable from './utils/isThenable';
 import { isPrepared, getPrepare, shouldAwaitOnSsr } from './prepared';
 import getElementType, { ELEMENT_TYPE } from './utils/getElementType';
+import getContextValue from './utils/getContextValue';
 import createDispatcher from './utils/createDispatcher';
 
 const updater = {
@@ -53,7 +54,7 @@ function renderCompositeElementInstance(instance, context = {}) {
 
 function renderFunctionElementInstance(element, context = {}) {
   React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentDispatcher.current =
-    createDispatcher();
+    createDispatcher(context);
   return element.type(element.props);
 }
 
@@ -89,12 +90,7 @@ async function prepareElement(element, errorHandler, context) {
       return [element.props.children, { ...context, _providers }];
     }
     case ELEMENT_TYPE.CONTEXT_CONSUMER: {
-      const parentProvider =
-        context._providers &&
-        context._providers.get(element.type._context.Provider);
-      const value = parentProvider
-        ? parentProvider.value
-        : element.type._context.currentValue;
+      const value = getContextValue(context, element.type._context);
 
       const consumerFunc = element.props.children;
       return [consumerFunc(value), context];

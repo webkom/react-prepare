@@ -1,4 +1,12 @@
-const createDispatcher = () => ({
+import getContextValue from './getContextValue';
+
+const createDispatcher = (context) => ({
+  readContext: (suppliedContext) => {
+    return getContextValue(context, suppliedContext);
+  },
+  useContext: (suppliedContext) => {
+    return getContextValue(context, suppliedContext);
+  },
   useEffect: () => {},
   useState: (initial) => [typeof initial === 'function' ? initial() : initial],
   useCallback: () => {},
