@@ -32,12 +32,21 @@ describe('isComponentType', () => {
     assert.equal(getElementType(<div />), ELEMENT_TYPE.DOM_ELEMENT);
     assert.equal(getElementType(<p>test</p>), ELEMENT_TYPE.DOM_ELEMENT);
     assert.equal(
+      getElementType(
+        <p>
+          <div />
+        </p>,
+      ),
+      ELEMENT_TYPE.DOM_ELEMENT,
+    );
+    assert.equal(
       getElementType(<a href="https://www.abakus.no">Abakus</a>),
       ELEMENT_TYPE.DOM_ELEMENT,
     );
   });
 
   it('should identify fragments', () => {
+    assert.equal(getElementType(<React.Fragment />), ELEMENT_TYPE.FRAGMENT);
     assert.equal(
       getElementType(<React.Fragment>test</React.Fragment>),
       ELEMENT_TYPE.FRAGMENT,
@@ -62,6 +71,14 @@ describe('isComponentType', () => {
       getElementType(<ForwardRef text="test" />),
       ELEMENT_TYPE.FORWARD_REF,
     );
+    assert.equal(
+      getElementType(
+        <ForwardRef text="test">
+          <div />
+        </ForwardRef>,
+      ),
+      ELEMENT_TYPE.FORWARD_REF,
+    );
   });
 
   it('should identify memoized component', () => {
@@ -71,6 +88,14 @@ describe('isComponentType', () => {
     const Memo = memo(Component);
 
     assert.equal(getElementType(<Memo text="test" />), ELEMENT_TYPE.MEMO);
+    assert.equal(
+      getElementType(
+        <Memo text="test">
+          <p>test</p>
+        </Memo>,
+      ),
+      ELEMENT_TYPE.MEMO,
+    );
   });
 
   it('should identify function components', () => {
@@ -88,6 +113,22 @@ describe('isComponentType', () => {
       getElementType(<ArrowComponent />),
       ELEMENT_TYPE.FUNCTION_COMPONENT,
     );
+    assert.equal(
+      getElementType(
+        <FunctionComponent>
+          <p>test</p>
+        </FunctionComponent>,
+      ),
+      ELEMENT_TYPE.FUNCTION_COMPONENT,
+    );
+    assert.equal(
+      getElementType(
+        <ArrowComponent>
+          <p>test</p>
+        </ArrowComponent>,
+      ),
+      ELEMENT_TYPE.FUNCTION_COMPONENT,
+    );
   });
 
   it('should identify context provider', () => {
@@ -95,6 +136,14 @@ describe('isComponentType', () => {
 
     assert.equal(
       getElementType(<Context.Provider value="value" />),
+      ELEMENT_TYPE.CONTEXT_PROVIDER,
+    );
+    assert.equal(
+      getElementType(
+        <Context.Provider value="value">
+          <div />
+        </Context.Provider>,
+      ),
       ELEMENT_TYPE.CONTEXT_PROVIDER,
     );
   });
@@ -118,6 +167,14 @@ describe('isComponentType', () => {
       getElementType(<ClassComponent />),
       ELEMENT_TYPE.CLASS_COMPONENT,
     );
+    assert.equal(
+      getElementType(
+        <ClassComponent>
+          <p>test</p>
+        </ClassComponent>,
+      ),
+      ELEMENT_TYPE.CLASS_COMPONENT,
+    );
 
     class PureComponent extends React.PureComponent {
       render() {
@@ -126,6 +183,14 @@ describe('isComponentType', () => {
     }
     assert.equal(
       getElementType(<PureComponent />),
+      ELEMENT_TYPE.CLASS_COMPONENT,
+    );
+    assert.equal(
+      getElementType(
+        <PureComponent>
+          <p>test</p>
+        </PureComponent>,
+      ),
       ELEMENT_TYPE.CLASS_COMPONENT,
     );
   });
