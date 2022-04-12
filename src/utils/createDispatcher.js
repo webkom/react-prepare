@@ -20,8 +20,8 @@ const createDispatcher = (context) => ({
   useInsertionEffect: () => {},
   useDebugValue: () => {},
   useDeferredValue: (value) => value,
+  useTransition: () => [false, () => {}],
   useId: () => {},
-  useTransition: () => {},
   useSyncExternalStore: () => {},
 });
 

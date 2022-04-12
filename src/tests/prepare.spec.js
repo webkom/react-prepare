@@ -11,6 +11,7 @@ import React, {
   useReducer,
   useRef,
   useState,
+  useTransition,
 } from 'react';
 import PropTypes from 'prop-types';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -408,6 +409,17 @@ describe('prepare', () => {
         return <Tester text={deferredValue} />;
       },
       'deferredValue',
+    );
+  });
+
+  it('Should support useTransition() hook', async () => {
+    await testPrepareComponent(
+      // eslint-disable-next-line react/display-name
+      (Tester) => () => {
+        const [isPending] = useTransition();
+        return <Tester text={isPending.toString()} />;
+      },
+      'false',
     );
   });
 
