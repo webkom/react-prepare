@@ -21,7 +21,8 @@ const createDispatcher = (context) => ({
   useDebugValue: () => {},
   useDeferredValue: (value) => value,
   useTransition: () => [false, () => {}],
-  useId: () => {},
+  // In most cases the useId hook should just be used for generating dom element ids, which should be irrelevant to react-prepare.
+  useId: () => undefined,
   useSyncExternalStore: () => {},
 });
 

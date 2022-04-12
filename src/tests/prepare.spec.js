@@ -7,6 +7,7 @@ import React, {
   useContext,
   useDeferredValue,
   useEffect,
+  useId,
   useMemo,
   useReducer,
   useRef,
@@ -421,6 +422,16 @@ describe('prepare', () => {
       },
       'false',
     );
+  });
+
+  it('useId() hook should fail gracefully, returning undefined', async () => {
+    const Test = () => {
+      const id = useId();
+      assert.equal(id, undefined, 'returns undefined');
+      return <div id={id} />;
+    };
+
+    await prepare(<Test />);
   });
 
   it('Should ignore useEffect() hooks', async () => {
