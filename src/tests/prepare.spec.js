@@ -8,6 +8,7 @@ import React, {
   useEffect,
   useMemo,
   useReducer,
+  useRef,
   useState,
 } from 'react';
 import PropTypes from 'prop-types';
@@ -384,6 +385,17 @@ describe('prepare', () => {
         return <Tester text={callback()} />;
       },
       'initialized',
+    );
+  });
+
+  it('Should support useRef() hook', async () => {
+    await testPrepareComponent(
+      // eslint-disable-next-line react/display-name
+      (Tester) => () => {
+        const ref = useRef('initial');
+        return <Tester text={ref.current} />;
+      },
+      'initial',
     );
   });
 
