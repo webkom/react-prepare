@@ -4,7 +4,11 @@ import isThenable from './utils/isThenable';
 import { isPrepared, getPrepare, shouldAwaitOnSsr } from './prepared';
 import getElementType, { ELEMENT_TYPE } from './utils/getElementType';
 import getContextValue from './utils/getContextValue';
-import createDispatcher from './utils/createDispatcher';
+import {
+  dispatcherIsRegistered,
+  registerDispatcher,
+  setDispatcherContext,
+} from './utils/createDispatcher';
 
 const updater = {
   enqueueSetState(publicInstance, partialState, callback) {
@@ -52,12 +56,6 @@ function renderCompositeElementInstance(instance, context = {}) {
   return [instance.render(), childContext];
 }
 
-function renderFunctionElementInstance({ type, props }, context = {}) {
-  React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentDispatcher.current =
-    createDispatcher(context);
-  return type(props);
-}
-
 async function prepareCompositeElement({ type, props }, errorHandler, context) {
   let preparePromise;
 
@@ -102,7 +100,8 @@ async function prepareElement(element, errorHandler, context) {
       return prepareElement({ ...element, type: element.type.type });
     }
     case ELEMENT_TYPE.FUNCTION_COMPONENT: {
-      return [renderFunctionElementInstance(element, context), context];
+      setDispatcherContext(context);
+      return [element.type(element.props), context];
     }
     case ELEMENT_TYPE.CLASS_COMPONENT: {
       return prepareCompositeElement(element, errorHandler, context);
@@ -119,6 +118,11 @@ async function prepare(element, options = {}, context = {}) {
       throw error;
     },
   } = options;
+
+  if (!dispatcherIsRegistered()) {
+    registerDispatcher();
+  }
+
   const [children, childContext, preparePromise] = await prepareElement(
     element,
     errorHandler,
