@@ -15,13 +15,13 @@ const createDispatcher = (context) => ({
   useMemo: (computeFunction) => computeFunction(),
   useCallback: (callbackFunction) => () => callbackFunction(),
   useRef: (initial) => ({ current: initial }),
-  useDebugValue: () => {},
   useImperativeHandle: () => {},
   useLayoutEffect: () => {},
   useInsertionEffect: () => {},
+  useDebugValue: () => {},
+  useDeferredValue: (value) => value,
   useId: () => {},
   useTransition: () => {},
-  useDeferredValue: () => {},
   useSyncExternalStore: () => {},
 });
 

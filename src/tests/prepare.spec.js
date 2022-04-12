@@ -5,6 +5,7 @@ import React, {
   memo,
   useCallback,
   useContext,
+  useDeferredValue,
   useEffect,
   useMemo,
   useReducer,
@@ -396,6 +397,17 @@ describe('prepare', () => {
         return <Tester text={ref.current} />;
       },
       'initial',
+    );
+  });
+
+  it('Should support useDeferredValue() hook', async () => {
+    await testPrepareComponent(
+      // eslint-disable-next-line react/display-name
+      (Tester) => () => {
+        const deferredValue = useDeferredValue('deferredValue');
+        return <Tester text={deferredValue} />;
+      },
+      'deferredValue',
     );
   });
 
