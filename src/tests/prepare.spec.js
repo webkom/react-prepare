@@ -8,6 +8,7 @@ import React, {
   useDeferredValue,
   useEffect,
   useId,
+  useInsertionEffect,
   useMemo,
   useReducer,
   useRef,
@@ -454,6 +455,16 @@ describe('prepare', () => {
     const HookComponent = () => {
       useEffect(() => {
         throw Error('Should not call the useEffect hook');
+      });
+      return <div>test</div>;
+    };
+    await prepare(<HookComponent />);
+  });
+
+  it('Should ignore useInsertionEffect() hooks', async () => {
+    const HookComponent = () => {
+      useInsertionEffect(() => {
+        throw Error('Should not call the useInsertionEffect hook');
       });
       return <div>test</div>;
     };
