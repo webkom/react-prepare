@@ -1,3 +1,5 @@
+/* eslint-disable react/prop-types */
+
 import { Provider } from 'react-redux';
 
 const { describe, it } = global;
@@ -62,7 +64,6 @@ describe('isComponentType', () => {
   });
 
   it('should identify forward ref', () => {
-    // eslint-disable-next-line react/prop-types,react/display-name
     const ForwardRef = React.forwardRef(({ text }, ref) => (
       <div>{text + ref}</div>
     ));
@@ -82,7 +83,6 @@ describe('isComponentType', () => {
   });
 
   it('should identify memoized component', () => {
-    // eslint-disable-next-line react/prop-types
     const Component = ({ text }) => <div>{text}</div>;
 
     const Memo = memo(Component);

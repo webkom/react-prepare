@@ -1,3 +1,5 @@
+/* eslint-disable react/prop-types */
+
 const { describe, it } = global;
 import assert from 'assert/strict';
 import sinon from 'sinon';
@@ -227,12 +229,10 @@ describe('prepare', () => {
   });
 
   it('Should support <React.Forwardref />', async () => {
-    // eslint-disable-next-line react/display-name
     const RefSetter = React.forwardRef((props, ref) => {
       ref.current = 'hi';
       return (
         <p id="test">
-          {/* eslint-disable-next-line react/prop-types */}
           {props.children} - {ref.current}
         </p>
       );
@@ -343,7 +343,6 @@ describe('prepare', () => {
 
   it('Should support useState() hook', async () => {
     await testPrepareComponent(
-      // eslint-disable-next-line react/display-name
       (Test) => () => {
         const [state] = useState('initial');
         return <Test text={state} />;
@@ -354,7 +353,6 @@ describe('prepare', () => {
 
   it('Should support useReducer() hook', async () => {
     await testPrepareComponent(
-      // eslint-disable-next-line react/display-name
       (Tester) => () => {
         const [state] = useReducer(
           () => {},
@@ -369,7 +367,6 @@ describe('prepare', () => {
 
   it('Should support useMemo() hook', async () => {
     await testPrepareComponent(
-      // eslint-disable-next-line react/display-name
       (Tester) => () => {
         let a = 'initial';
         let b = 'ized';
@@ -382,7 +379,6 @@ describe('prepare', () => {
 
   it('Should support useCallback() hook', async () => {
     await testPrepareComponent(
-      // eslint-disable-next-line react/display-name
       (Tester) => () => {
         let a = 'initial';
         let b = 'ized';
@@ -395,7 +391,6 @@ describe('prepare', () => {
 
   it('Should support useRef() hook', async () => {
     await testPrepareComponent(
-      // eslint-disable-next-line react/display-name
       (Tester) => () => {
         const ref = useRef('initial');
         return <Tester text={ref.current} />;
@@ -406,7 +401,6 @@ describe('prepare', () => {
 
   it('Should support useDeferredValue() hook', async () => {
     await testPrepareComponent(
-      // eslint-disable-next-line react/display-name
       (Tester) => () => {
         const deferredValue = useDeferredValue('deferredValue');
         return <Tester text={deferredValue} />;
@@ -417,7 +411,6 @@ describe('prepare', () => {
 
   it('Should support useTransition() hook', async () => {
     await testPrepareComponent(
-      // eslint-disable-next-line react/display-name
       (Tester) => () => {
         const [isPending] = useTransition();
         return <Tester text={isPending.toString()} />;
@@ -438,7 +431,6 @@ describe('prepare', () => {
 
   it('Should support useSyncExternalStore() hook', async () => {
     await testPrepareComponent(
-      // eslint-disable-next-line react/display-name
       (Tester) => () => {
         const serverState = useSyncExternalStore(
           () => {},
@@ -527,7 +519,6 @@ describe('prepare', () => {
 
   it('Should support React.memo()', async () => {
     await testPrepareComponent(
-      // eslint-disable-next-line react/display-name
       (Test) => () => {
         const Memoized = memo(Test);
         return <Memoized text="foo" />;
@@ -538,9 +529,7 @@ describe('prepare', () => {
 
   it('Should support React.memo() with a memoized function component', async () => {
     await testPrepareComponent(
-      // eslint-disable-next-line react/display-name
       (Tester) => () => {
-        // eslint-disable-next-line react/display-name,react/prop-types
         const Memoized = memo(({ text }) => <Tester text={text} />);
         return <Memoized text="foo" />;
       },
