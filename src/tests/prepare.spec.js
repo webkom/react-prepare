@@ -12,6 +12,7 @@ import React, {
   useReducer,
   useRef,
   useState,
+  useSyncExternalStore,
   useTransition,
 } from 'react';
 import PropTypes from 'prop-types';
@@ -432,6 +433,21 @@ describe('prepare', () => {
     };
 
     await prepare(<Test />);
+  });
+
+  it('Should support useSyncExternalStore() hook', async () => {
+    await testPrepareComponent(
+      // eslint-disable-next-line react/display-name
+      (Tester) => () => {
+        const serverState = useSyncExternalStore(
+          () => {},
+          () => 'initial',
+          () => 'server-initial',
+        );
+        return <Tester text={serverState} />;
+      },
+      'server-initial',
+    );
   });
 
   it('Should ignore useEffect() hooks', async () => {

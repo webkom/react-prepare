@@ -23,7 +23,8 @@ const createDispatcher = (context) => ({
   useTransition: () => [false, () => {}],
   // In most cases the useId hook should just be used for generating dom element ids, which should be irrelevant to react-prepare.
   useId: () => undefined,
-  useSyncExternalStore: () => {},
+  useSyncExternalStore: (registerCallback, getSnapshot, getServerSnapshot) =>
+    getServerSnapshot(),
 });
 
 export default createDispatcher;
