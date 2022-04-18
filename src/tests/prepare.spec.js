@@ -1,7 +1,23 @@
+/* eslint-disable react/prop-types */
+
 const { describe, it } = global;
 import assert from 'assert/strict';
 import sinon from 'sinon';
-import React from 'react';
+import React, {
+  memo,
+  useCallback,
+  useContext,
+  useDeferredValue,
+  useEffect,
+  useId,
+  useInsertionEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  useTransition,
+} from 'react';
 import PropTypes from 'prop-types';
 import { renderToStaticMarkup } from 'react-dom/server';
 import prepared from '../prepared';
@@ -213,12 +229,10 @@ describe('prepare', () => {
   });
 
   it('Should support <React.Forwardref />', async () => {
-    // eslint-disable-next-line react/display-name
     const RefSetter = React.forwardRef((props, ref) => {
       ref.current = 'hi';
       return (
         <p id="test">
-          {/* eslint-disable-next-line react/prop-types */}
           {props.children} - {ref.current}
         </p>
       );
@@ -292,6 +306,235 @@ describe('prepare', () => {
     );
     const html = renderToStaticMarkup(<App text="foo" />);
     assert.equal(html, '<div>foo</div>', 'renders with correct html');
+  });
+
+  const testPrepareComponent = async (componentCreator, expectedText) => {
+    const doAsyncSideEffect = sinon.spy(async () => {});
+    const prepareUsingProps = sinon.spy(async ({ text }) => {
+      await doAsyncSideEffect(text);
+    });
+    const ComponentTester = prepared(prepareUsingProps)(({ text }) => (
+      <div>{text}</div>
+    ));
+    const Component = componentCreator(ComponentTester);
+    await prepare(<Component />);
+
+    assert(
+      prepareUsingProps.calledOnce,
+      'prepareUsingProps has been called once',
+    );
+    assert(
+      prepareUsingProps.calledWith({ text: expectedText }),
+      'prepareUsingProps has been called with correct props',
+    );
+    assert(
+      doAsyncSideEffect.calledOnce,
+      'doAsyncSideEffect has been called once',
+    );
+
+    // if it doesn't render to correct html, the test is likely set up wrong
+    const html = renderToStaticMarkup(<Component />);
+    assert.equal(
+      html,
+      `<div>${expectedText}</div>`,
+      'renders with correct html',
+    );
+  };
+
+  it('Should support useState() hook', async () => {
+    await testPrepareComponent(
+      (Test) => () => {
+        const [state] = useState('initial');
+        return <Test text={state} />;
+      },
+      'initial',
+    );
+  });
+
+  it('Should support useReducer() hook', async () => {
+    await testPrepareComponent(
+      (Tester) => () => {
+        const [state] = useReducer(
+          () => {},
+          'initial',
+          (initArg) => initArg + 'ized',
+        );
+        return <Tester text={state} />;
+      },
+      'initialized',
+    );
+  });
+
+  it('Should support useMemo() hook', async () => {
+    await testPrepareComponent(
+      (Tester) => () => {
+        let a = 'initial';
+        let b = 'ized';
+        const value = useMemo(() => a + b, [a, b]);
+        return <Tester text={value} />;
+      },
+      'initialized',
+    );
+  });
+
+  it('Should support useCallback() hook', async () => {
+    await testPrepareComponent(
+      (Tester) => () => {
+        let a = 'initial';
+        let b = 'ized';
+        const callback = useCallback(() => a + b, [a, b]);
+        return <Tester text={callback()} />;
+      },
+      'initialized',
+    );
+  });
+
+  it('Should support useRef() hook', async () => {
+    await testPrepareComponent(
+      (Tester) => () => {
+        const ref = useRef('initial');
+        return <Tester text={ref.current} />;
+      },
+      'initial',
+    );
+  });
+
+  it('Should support useDeferredValue() hook', async () => {
+    await testPrepareComponent(
+      (Tester) => () => {
+        const deferredValue = useDeferredValue('deferredValue');
+        return <Tester text={deferredValue} />;
+      },
+      'deferredValue',
+    );
+  });
+
+  it('Should support useTransition() hook', async () => {
+    await testPrepareComponent(
+      (Tester) => () => {
+        const [isPending] = useTransition();
+        return <Tester text={isPending.toString()} />;
+      },
+      'false',
+    );
+  });
+
+  it('useId() hook should fail gracefully, returning undefined', async () => {
+    const Test = () => {
+      const id = useId();
+      assert.equal(id, undefined, 'returns undefined');
+      return <div id={id} />;
+    };
+
+    await prepare(<Test />);
+  });
+
+  it('Should support useSyncExternalStore() hook', async () => {
+    await testPrepareComponent(
+      (Tester) => () => {
+        const serverState = useSyncExternalStore(
+          () => {},
+          () => 'initial',
+          () => 'server-initial',
+        );
+        return <Tester text={serverState} />;
+      },
+      'server-initial',
+    );
+  });
+
+  it('Should ignore useEffect() hooks', async () => {
+    const HookComponent = () => {
+      useEffect(() => {
+        throw Error('Should not call the useEffect hook');
+      });
+      return <div>test</div>;
+    };
+    await prepare(<HookComponent />);
+  });
+
+  it('Should ignore useInsertionEffect() hooks', async () => {
+    const HookComponent = () => {
+      useInsertionEffect(() => {
+        throw Error('Should not call the useInsertionEffect hook');
+      });
+      return <div>test</div>;
+    };
+    await prepare(<HookComponent />);
+  });
+
+  it('Should support useContext() hook', async () => {
+    const MyContext = React.createContext('initial');
+    const AnotherContext = React.createContext('');
+
+    const MyContextConsumer = (props) => {
+      const data = useContext(MyContext);
+      assert.equal(data, props.expectedData);
+      return (
+        <p>
+          My:{data}
+          {props.children}
+        </p>
+      );
+    };
+    MyContextConsumer.propTypes = {
+      expectedData: PropTypes.string,
+      children: PropTypes.node,
+    };
+    const AnotherContextConsumer = (props) => {
+      const data = useContext(AnotherContext);
+      assert.equal(data, props.expectedData);
+      return <p>Another:{data}</p>;
+    };
+    AnotherContextConsumer.propTypes = {
+      expectedData: PropTypes.string,
+    };
+
+    const App = () => (
+      <>
+        <MyContextConsumer expectedData="initial" />
+        <MyContext.Provider value="testing">
+          <MyContextConsumer expectedData="testing">
+            <MyContextConsumer expectedData="testing" />
+          </MyContextConsumer>
+          <AnotherContextConsumer expectedData="" />
+        </MyContext.Provider>
+        <AnotherContext.Provider value="another">
+          <MyContext.Provider value="myOther">
+            <MyContextConsumer expectedData="myOther" />
+            <AnotherContextConsumer expectedData="another" />
+          </MyContext.Provider>
+        </AnotherContext.Provider>
+      </>
+    );
+    await prepare(<App />);
+
+    const html = renderToStaticMarkup(<App />);
+    assert.equal(
+      html,
+      '<p>My:initial</p><p>My:testing<p>My:testing</p></p><p>Another:</p><p>My:myOther</p><p>Another:another</p>',
+      'renders with correct html',
+    );
+  });
+
+  it('Should support React.memo()', async () => {
+    await testPrepareComponent(
+      (Test) => () => {
+        const Memoized = memo(Test);
+        return <Memoized text="foo" />;
+      },
+      'foo',
+    );
+  });
+
+  it('Should support React.memo() with a memoized function component', async () => {
+    await testPrepareComponent(
+      (Tester) => () => {
+        const Memoized = memo(({ text }) => <Tester text={text} />);
+        return <Memoized text="foo" />;
+      },
+      'foo',
+    );
   });
 
   it('Should support React Contexts', async () => {

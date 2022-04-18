@@ -3,6 +3,12 @@ import React from 'react';
 import isThenable from './utils/isThenable';
 import { isPrepared, getPrepare, shouldAwaitOnSsr } from './prepared';
 import getElementType, { ELEMENT_TYPE } from './utils/getElementType';
+import getContextValue from './utils/getContextValue';
+import {
+  dispatcherIsRegistered,
+  registerDispatcher,
+  setDispatcherContext,
+} from './utils/dispatcher';
 
 const updater = {
   enqueueSetState(publicInstance, partialState, callback) {
@@ -43,11 +49,10 @@ function createCompositeElementInstance(
 }
 
 function renderCompositeElementInstance(instance, context = {}) {
-  const childContext = Object.assign(
-    {},
-    context,
-    instance.getChildContext ? instance.getChildContext() : {},
-  );
+  const childContext = {
+    ...context,
+    ...(instance.getChildContext ? instance.getChildContext() : {}),
+  };
   return [instance.render(), childContext];
 }
 
@@ -83,12 +88,7 @@ async function prepareElement(element, errorHandler, context) {
       return [element.props.children, { ...context, _providers }];
     }
     case ELEMENT_TYPE.CONTEXT_CONSUMER: {
-      const parentProvider =
-        context._providers &&
-        context._providers.get(element.type._context.Provider);
-      const value = parentProvider
-        ? parentProvider.value
-        : element.type._context.currentValue;
+      const value = getContextValue(context, element.type._context);
 
       const consumerFunc = element.props.children;
       return [consumerFunc(value), context];
@@ -97,9 +97,10 @@ async function prepareElement(element, errorHandler, context) {
       return [element.type.render(element.props, element.ref), context];
     }
     case ELEMENT_TYPE.MEMO: {
-      throw new Error('Memo elements are not supported yet');
+      return prepareElement({ ...element, type: element.type.type });
     }
     case ELEMENT_TYPE.FUNCTION_COMPONENT: {
+      setDispatcherContext(context);
       return [element.type(element.props), context];
     }
     case ELEMENT_TYPE.CLASS_COMPONENT: {
@@ -117,6 +118,11 @@ async function prepare(element, options = {}, context = {}) {
       throw error;
     },
   } = options;
+
+  if (!dispatcherIsRegistered()) {
+    registerDispatcher();
+  }
+
   const [children, childContext, preparePromise] = await prepareElement(
     element,
     errorHandler,
