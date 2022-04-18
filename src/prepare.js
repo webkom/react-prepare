@@ -8,7 +8,7 @@ import {
   dispatcherIsRegistered,
   registerDispatcher,
   setDispatcherContext,
-} from './utils/createDispatcher';
+} from './utils/dispatcher';
 
 const updater = {
   enqueueSetState(publicInstance, partialState, callback) {
