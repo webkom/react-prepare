@@ -21,7 +21,10 @@ const dispatcher = {
     noOp,
   ],
   useMemo: (computeFunction) => computeFunction(),
-  useCallback: (callbackFunction) => () => callbackFunction(),
+  useCallback:
+    (callbackFunction) =>
+    (...args) =>
+      callbackFunction(...args),
   useRef: (initial) => ({ current: initial }),
   useImperativeHandle: noOp,
   useLayoutEffect: noOp,
