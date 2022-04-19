@@ -85,7 +85,7 @@ async function prepareElement(element, errorHandler, context) {
     case ELEMENT_TYPE.CONTEXT_PROVIDER: {
       const _providers = new Map(context._providers);
       _providers.set(element.type._context.Provider, element.props);
-      return [element.props.children, { ...context, _providers }];
+      return [element.props.children, { _providers }];
     }
     case ELEMENT_TYPE.CONTEXT_CONSUMER: {
       const value = getContextValue(context, element.type._context);
@@ -97,7 +97,11 @@ async function prepareElement(element, errorHandler, context) {
       return [element.type.render(element.props, element.ref), context];
     }
     case ELEMENT_TYPE.MEMO: {
-      return prepareElement({ ...element, type: element.type.type });
+      return prepareElement(
+        { ...element, type: element.type.type },
+        errorHandler,
+        context,
+      );
     }
     case ELEMENT_TYPE.FUNCTION_COMPONENT: {
       setDispatcherContext(context);
