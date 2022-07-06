@@ -1,21 +1,36 @@
-import React, { PureComponent, Component } from 'react';
+import React, { PureComponent, Component, ComponentType } from 'react';
 
 import { __REACT_PREPARE__ } from './constants';
+import {
+  ContextTypes,
+  PossiblyPreparedComponent,
+  PrepareFunction,
+} from './types';
+
+export interface PreparedOptions<P, C> {
+  pure?: boolean;
+  componentDidMount?: boolean;
+  componentWillReceiveProps?:
+    | boolean
+    | ((props: P, nextProps: P, context: C, nextContext: C) => boolean);
+  awaitOnSsr?: boolean;
+  contextTypes?: ContextTypes;
+}
 
 const prepared =
-  (
-    prepare,
+  <P, C = unknown>(
+    prepare: PrepareFunction<P, C>,
     {
       pure = true,
       componentDidMount = true,
       componentWillReceiveProps = true,
       awaitOnSsr = true,
       contextTypes = {},
-    } = {},
+    }: PreparedOptions<P, C> = {},
   ) =>
-  (OriginalComponent) => {
+  (OriginalComponent: ComponentType<P>) => {
     const { displayName } = OriginalComponent;
-    class PreparedComponent extends (pure ? PureComponent : Component) {
+    class PreparedComponent extends (pure ? PureComponent : Component)<P> {
       static displayName = `PreparedComponent${
         displayName ? `(${displayName})` : ''
       }`;
@@ -25,17 +40,17 @@ const prepared =
 
       componentDidMount() {
         if (componentDidMount) {
-          prepare(this.props, this.context);
+          prepare(this.props, this.context as C);
         }
       }
 
-      componentWillReceiveProps(nextProps, nextContext) {
+      componentWillReceiveProps(nextProps: Readonly<P>, nextContext: C) {
         if (
           typeof componentWillReceiveProps === 'function'
             ? componentWillReceiveProps(
                 this.props,
                 nextProps,
-                this.context,
+                this.context as C,
                 nextContext,
               )
             : componentWillReceiveProps
@@ -47,28 +62,33 @@ const prepared =
       render() {
         return <OriginalComponent {...this.props} />;
       }
+
+      static [__REACT_PREPARE__] = {
+        prepare: prepare.bind(null),
+        awaitOnSsr,
+      };
     }
-    PreparedComponent[__REACT_PREPARE__] = {
-      prepare: prepare.bind(null),
-      awaitOnSsr,
-    };
     return PreparedComponent;
   };
 
-function getPrepare(CustomComponent) {
+function getPrepare<P>(
+  CustomComponent: PossiblyPreparedComponent<P>,
+): PrepareFunction<P> | undefined {
   return (
     CustomComponent[__REACT_PREPARE__] &&
     CustomComponent[__REACT_PREPARE__].prepare
   );
 }
 
-function isPrepared(CustomComponent) {
+function isPrepared(CustomComponent: ComponentType<unknown>): boolean {
   return typeof getPrepare(CustomComponent) === 'function';
 }
 
-function shouldAwaitOnSsr(CustomComponent) {
+function shouldAwaitOnSsr(
+  CustomComponent: PossiblyPreparedComponent<unknown>,
+): boolean {
   return (
-    CustomComponent[__REACT_PREPARE__] &&
+    !!CustomComponent[__REACT_PREPARE__] &&
     CustomComponent[__REACT_PREPARE__].awaitOnSsr
   );
 }
