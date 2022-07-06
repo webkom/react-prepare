@@ -40,3 +40,18 @@ export type PreparedComponent<P> = ComponentType<P> &
 
 export type PossiblyPreparedComponent<P> = ComponentType<P> &
   Partial<PreparedComponentAttributes<P>>;
+
+export type ClassComponentInstance<P, S = unknown> = Omit<
+  Component<P, S>,
+  'props'
+> & {
+  props: P;
+  updater?: {
+    enqueueSetState: (
+      publicInstance: Component<P, S>,
+      partialState: Partial<S> | ((state: S, props: P) => Partial<S>),
+      callback?: () => void,
+    ) => void;
+  };
+  getChildContext?: () => PrepareContext;
+};

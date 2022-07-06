@@ -1,5 +1,15 @@
 import React, {
+  ComponentType,
+  Consumer,
+  ConsumerProps,
   Context,
+  ExoticComponent,
+  ForwardedRef,
+  ForwardRefRenderFunction,
+  MemoExoticComponent,
+  Provider,
+  ProviderProps,
+  ReactElement,
   useCallback,
   useContext,
   useDebugValue,
@@ -47,3 +57,37 @@ export type ReactWithInternals = typeof React & {
 export interface ContextWithInternals<T> extends Context<T> {
   _currentValue: T;
 }
+
+interface ProviderWithInternals<T = unknown> extends Provider<T> {
+  _context: Context<T>;
+}
+
+export type ProviderElement = ReactElement<
+  ProviderProps<unknown>,
+  ProviderWithInternals
+>;
+
+interface ConsumerWithInternals<T = unknown> extends Consumer<T> {
+  _context: Context<T>;
+}
+
+export type ConsumerElement = ReactElement<
+  ConsumerProps<unknown>,
+  ConsumerWithInternals
+>;
+
+// I couldn't find any exported types in react that matched.
+//  ForwardRefExoticComponent seems completely wrong.
+export type ForwardRefElement<P = unknown> = ReactElement<
+  P,
+  ExoticComponent<P> & {
+    render: ForwardRefRenderFunction<unknown, P>;
+  }
+> & {
+  ref: ForwardedRef<unknown>;
+};
+
+export type MemoElement<P = unknown> = ReactElement<
+  P,
+  MemoExoticComponent<ComponentType<P>>
+>;

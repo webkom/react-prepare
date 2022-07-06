@@ -4,6 +4,7 @@ import { __REACT_PREPARE__ } from './constants';
 import {
   ContextTypes,
   PossiblyPreparedComponent,
+  PreparedComponent,
   PrepareFunction,
 } from './types';
 
@@ -72,20 +73,19 @@ const prepared =
   };
 
 function getPrepare<P>(
+  CustomComponent: PreparedComponent<P>,
+): PrepareFunction<P> {
+  return CustomComponent[__REACT_PREPARE__].prepare;
+}
+
+function isPrepared<P>(
   CustomComponent: PossiblyPreparedComponent<P>,
-): PrepareFunction<P> | undefined {
-  return (
-    CustomComponent[__REACT_PREPARE__] &&
-    CustomComponent[__REACT_PREPARE__].prepare
-  );
+): CustomComponent is PreparedComponent<P> {
+  return CustomComponent[__REACT_PREPARE__] !== undefined;
 }
 
-function isPrepared(CustomComponent: ComponentType<unknown>): boolean {
-  return typeof getPrepare(CustomComponent) === 'function';
-}
-
-function shouldAwaitOnSsr(
-  CustomComponent: PossiblyPreparedComponent<unknown>,
+function shouldAwaitOnSsr<P>(
+  CustomComponent: PossiblyPreparedComponent<P>,
 ): boolean {
   return (
     !!CustomComponent[__REACT_PREPARE__] &&

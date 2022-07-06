@@ -1,4 +1,10 @@
-import React from 'react';
+import React, {
+  ClassicElement,
+  Component,
+  FunctionComponentElement,
+  ReactElement,
+  ReactNode,
+} from 'react';
 
 import isThenable from './utils/isThenable';
 import { isPrepared, getPrepare, shouldAwaitOnSsr } from './prepared';
@@ -9,9 +15,24 @@ import {
   registerDispatcher,
   setDispatcherContext,
 } from './utils/dispatcher';
+import {
+  ClassComponentInstance,
+  ContextProviderMap,
+  PrepareContext,
+} from './types';
+import {
+  ConsumerElement,
+  ForwardRefElement,
+  MemoElement,
+  ProviderElement,
+} from './utils/reactInternalTypes';
 
 const updater = {
-  enqueueSetState(publicInstance, partialState, callback) {
+  enqueueSetState<P, S>(
+    publicInstance: Component<P, S>,
+    partialState: Partial<S> | ((state: S, props: P) => Partial<S>),
+    callback?: () => void,
+  ): void {
     const newState =
       typeof partialState === 'function'
         ? partialState(publicInstance.state, publicInstance.props)
@@ -25,11 +46,14 @@ const updater = {
   },
 };
 
-function createCompositeElementInstance(
-  { type: CompositeComponent, props },
-  context,
+function createCompositeElementInstance<P>(
+  { type: CompositeComponent, props }: ClassicElement<P>,
+  context: PrepareContext,
 ) {
-  const instance = new CompositeComponent(props, context);
+  const instance: ClassComponentInstance<P> = new CompositeComponent(
+    props,
+    context,
+  );
   const state = instance.state || null;
 
   instance.props = props;
@@ -48,7 +72,10 @@ function createCompositeElementInstance(
   return instance;
 }
 
-function renderCompositeElementInstance(instance, context = {}) {
+function renderCompositeElementInstance<P>(
+  instance: ClassComponentInstance<P>,
+  context: PrepareContext = {},
+): [ReactNode, PrepareContext] {
   const childContext = {
     ...context,
     ...(instance.getChildContext ? instance.getChildContext() : {}),
@@ -56,7 +83,12 @@ function renderCompositeElementInstance(instance, context = {}) {
   return [instance.render(), childContext];
 }
 
-async function prepareCompositeElement({ type, props }, errorHandler, context) {
+async function prepareCompositeElement<P>(
+  element: ClassicElement<P>,
+  errorHandler: (error: unknown) => void,
+  context: PrepareContext,
+): Promise<[ReactNode, PrepareContext, Promise<void>?]> {
+  const { type, props } = element;
   let preparePromise;
 
   if (isPrepared(type)) {
@@ -68,11 +100,15 @@ async function prepareCompositeElement({ type, props }, errorHandler, context) {
       }
     }
   }
-  const instance = createCompositeElementInstance({ type, props }, context);
+  const instance = createCompositeElementInstance(element, context);
   return [...renderCompositeElementInstance(instance, context), preparePromise];
 }
 
-async function prepareElement(element, errorHandler, context) {
+async function prepareElement(
+  element: ReactNode,
+  errorHandler: (error: unknown) => void,
+  context: PrepareContext,
+): Promise<[ReactNode, PrepareContext, Promise<void>?]> {
   switch (getElementType(element)) {
     case ELEMENT_TYPE.NOTHING:
     case ELEMENT_TYPE.TEXT_NODE: {
@@ -80,35 +116,53 @@ async function prepareElement(element, errorHandler, context) {
     }
     case ELEMENT_TYPE.DOM_ELEMENT:
     case ELEMENT_TYPE.FRAGMENT: {
-      return [element.props.children, context];
+      return [(element as ReactElement).props.children, context];
     }
     case ELEMENT_TYPE.CONTEXT_PROVIDER: {
-      const _providers = new Map(context._providers);
-      _providers.set(element.type._context.Provider, element.props);
-      return [element.props.children, { _providers }];
+      const providerElement = element as ProviderElement;
+      const _providers: ContextProviderMap = new Map(context._providers);
+      _providers.set(
+        providerElement.type._context.Provider,
+        providerElement.props,
+      );
+      return [providerElement.props.children, { _providers }];
     }
     case ELEMENT_TYPE.CONTEXT_CONSUMER: {
-      const value = getContextValue(context, element.type._context);
+      const consumerElement = element as ConsumerElement;
+      const value = getContextValue(context, consumerElement.type._context);
 
-      const consumerFunc = element.props.children;
+      const consumerFunc = consumerElement.props.children;
       return [consumerFunc(value), context];
     }
     case ELEMENT_TYPE.FORWARD_REF: {
-      return [element.type.render(element.props, element.ref), context];
+      const forwardRefElement = element as ForwardRefElement;
+      return [
+        forwardRefElement.type.render(
+          forwardRefElement.props,
+          forwardRefElement.ref,
+        ),
+        context,
+      ];
     }
     case ELEMENT_TYPE.MEMO: {
+      const memoElement = element as MemoElement;
       return prepareElement(
-        { ...element, type: element.type.type },
+        { ...memoElement, type: memoElement.type.type },
         errorHandler,
         context,
       );
     }
     case ELEMENT_TYPE.FUNCTION_COMPONENT: {
+      const functionElement = element as FunctionComponentElement<unknown>;
       setDispatcherContext(context);
-      return [element.type(element.props), context];
+      return [functionElement.type(functionElement.props), context];
     }
     case ELEMENT_TYPE.CLASS_COMPONENT: {
-      return prepareCompositeElement(element, errorHandler, context);
+      return prepareCompositeElement(
+        element as ClassicElement<unknown>,
+        errorHandler,
+        context,
+      );
     }
     default: {
       throw new Error(`Unsupported element type: ${element}`);
@@ -116,7 +170,15 @@ async function prepareElement(element, errorHandler, context) {
   }
 }
 
-async function prepare(element, options = {}, context = {}) {
+interface PrepareOptions {
+  errorHandler?: (error: unknown) => void;
+}
+
+async function prepare(
+  element: ReactNode,
+  options: PrepareOptions = {},
+  context: PrepareContext = {},
+): Promise<unknown> {
   const {
     errorHandler = (error) => {
       throw error;
