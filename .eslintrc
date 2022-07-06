@@ -4,11 +4,12 @@
     "es2021": true,
     "node": true
   },
-  "parser": "@babel/eslint-parser",
+  "parser": "@typescript-eslint/parser",
   "extends": [
     "eslint:recommended",
     "plugin:react/recommended",
-    "prettier"
+    "prettier",
+    "plugin:@typescript-eslint/recommended"
   ],
   "parserOptions": {
     "ecmaFeatures": {
@@ -17,13 +18,14 @@
     "ecmaVersion": "latest",
     "sourceType": "module"
   },
-  "plugins": ["babel", "react"],
+  "plugins": ["babel", "react", "@typescript-eslint"],
   "settings": {
     "react": {
       "version": "detect"
     }
   },
   "rules": {
-    "react/display-name": "off"
+    "react/display-name": "off",
+    "@typescript-eslint/no-empty-function": "off"
   }
 }

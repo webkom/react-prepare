@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "baseUrl": "src",
+    "target": "ESNext",
+    "moduleResolution": "Node",
+    "jsx": "react",
+    "noEmit": true,
+    "esModuleInterop": true,
+    "types": ["mocha", "node"]
+  },
+  "include": ["src"]
+}
