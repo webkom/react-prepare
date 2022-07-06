@@ -1,25 +1,27 @@
-export const ELEMENT_TYPE = {
-  NOTHING: 0,
-  TEXT_NODE: 1,
-  DOM_ELEMENT: 2,
-  FRAGMENT: 3,
-  CONTEXT_PROVIDER: 4,
-  CONTEXT_CONSUMER: 5,
-  FORWARD_REF: 6,
-  MEMO: 7,
-  FUNCTION_COMPONENT: 8,
-  CLASS_COMPONENT: 9,
-};
+import { ExoticComponent, ReactElement, ReactNode } from 'react';
 
-function isTextNode(element) {
+export enum ELEMENT_TYPE {
+  NOTHING = 0,
+  TEXT_NODE = 1,
+  DOM_ELEMENT = 2,
+  FRAGMENT = 3,
+  CONTEXT_PROVIDER = 4,
+  CONTEXT_CONSUMER = 5,
+  FORWARD_REF = 6,
+  MEMO = 7,
+  FUNCTION_COMPONENT = 8,
+  CLASS_COMPONENT = 9,
+}
+
+function isTextNode(element: ReactNode): element is string | number {
   return typeof element === 'number' || typeof element === 'string';
 }
 
-function isReactElement(element) {
+function isReactElement(element: ReactNode): element is ReactElement {
   return !!element && typeof element === 'object';
 }
 
-export default function getElementType(element) {
+export default function getElementType(element: ReactNode) {
   if (isTextNode(element)) {
     return ELEMENT_TYPE.TEXT_NODE;
   } else if (!isReactElement(element)) {
@@ -30,7 +32,7 @@ export default function getElementType(element) {
     return ELEMENT_TYPE.FRAGMENT;
   } else if (typeof element.type === 'object') {
     // Exotic components
-    const { type } = element;
+    const type: ExoticComponent = element.type;
     if (type.$$typeof.toString() === 'Symbol(react.provider)') {
       return ELEMENT_TYPE.CONTEXT_PROVIDER;
     } else if (type.$$typeof.toString() === 'Symbol(react.context)') {
