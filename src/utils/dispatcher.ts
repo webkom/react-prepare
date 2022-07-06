@@ -1,31 +1,48 @@
 import getContextValue from './getContextValue';
 import { __REACT_PREPARE__ } from '../constants';
-import React from 'react';
+import React, {
+  Context,
+  DispatchWithoutAction,
+  Reducer,
+  ReducerState,
+} from 'react';
+import { ReactDispatcher, ReactWithInternals } from './reactInternalTypes';
+import { PrepareContext } from '../types';
+
+type Dispatcher = ReactDispatcher & {
+  [__REACT_PREPARE__]: {
+    context: PrepareContext;
+  };
+};
+
+const ReactInternals = (React as ReactWithInternals)
+  .__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
 
 const noOp = () => {};
 
-function readContext(suppliedContext) {
-  return getContextValue(this[__REACT_PREPARE__].context, suppliedContext);
+function readContext<T>(this: Dispatcher, context: Context<T>): T {
+  return getContextValue(this[__REACT_PREPARE__].context, context);
 }
 
-const dispatcher = {
+const dispatcher: Dispatcher = {
   readContext: readContext,
   useContext: readContext,
   useEffect: noOp,
-  useState: (initial) => [
-    typeof initial === 'function' ? initial() : initial,
+  useState: <S>(initialValue?: S | (() => S)) => [
+    initialValue instanceof Function ? initialValue() : initialValue,
     noOp,
   ],
-  useReducer: (reducer, initArg, initializer) => [
-    !initializer ? initArg : initializer(initArg),
+  useReducer: <R extends Reducer<unknown, unknown>, I>(
+    reducer: R,
+    initArg: I | ReducerState<R>,
+    initializer?: (initArg: I) => ReducerState<R>,
+  ): [ReducerState<R>, DispatchWithoutAction] => [
+    !initializer ? (initArg as ReducerState<R>) : initializer(initArg as I),
     noOp,
   ],
   useMemo: (computeFunction) => computeFunction(),
-  useCallback:
-    (callbackFunction) =>
-    (...args) =>
-      callbackFunction(...args),
-  useRef: (initial) => ({ current: initial }),
+  useCallback: (callbackFunction) => callbackFunction,
+  useRef: (initialValue?) => ({ current: initialValue }),
   useImperativeHandle: noOp,
   useLayoutEffect: noOp,
   useInsertionEffect: noOp,
@@ -33,24 +50,20 @@ const dispatcher = {
   useDeferredValue: (value) => value,
   useTransition: () => [false, noOp],
   // In most cases the useId hook should just be used for generating dom element ids, which should be irrelevant to react-prepare.
-  useId: () => undefined,
+  useId: () => '',
   useSyncExternalStore: (registerCallback, getSnapshot, getServerSnapshot) =>
-    getServerSnapshot(),
+    getServerSnapshot ? getServerSnapshot() : getSnapshot(),
 
   [__REACT_PREPARE__]: {
     context: {},
   },
 };
 
-const setDispatcherContext = (context) =>
+export const setDispatcherContext = (context: PrepareContext) =>
   (dispatcher[__REACT_PREPARE__].context = context);
 
-const registerDispatcher = () =>
-  (React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentDispatcher.current =
-    dispatcher);
+export const registerDispatcher = () =>
+  (ReactInternals.ReactCurrentDispatcher.current = dispatcher);
 
-const dispatcherIsRegistered = () =>
-  React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED
-    .ReactCurrentDispatcher.current === dispatcher;
-
-export { setDispatcherContext, registerDispatcher, dispatcherIsRegistered };
+export const dispatcherIsRegistered = () =>
+  ReactInternals.ReactCurrentDispatcher.current === dispatcher;

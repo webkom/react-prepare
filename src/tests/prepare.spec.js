@@ -419,10 +419,10 @@ describe('prepare', () => {
     );
   });
 
-  it('useId() hook should fail gracefully, returning undefined', async () => {
+  it('useId() hook should fail gracefully, returning empty string', async () => {
     const Test = () => {
       const id = useId();
-      assert.equal(id, undefined, 'returns undefined');
+      assert.equal(id, '', 'returns empty string');
       return <div id={id} />;
     };
 
