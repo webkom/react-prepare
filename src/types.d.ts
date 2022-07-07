@@ -1,4 +1,4 @@
-import { Component, ComponentType, Provider } from 'react';
+import { Component, ComponentType, EffectCallback, Provider } from 'react';
 import { __REACT_PREPARE__ } from './constants';
 import { Dispatch } from 'redux';
 import PropTypes from 'prop-types';
@@ -54,4 +54,12 @@ export type ClassComponentInstance<P, S = unknown> = Omit<
     ) => void;
   };
   getChildContext?: () => PrepareContext;
+};
+
+export type PrepareHookFunction = () => Promise<void>;
+
+export type PrepareHookEffect = EffectCallback & {
+  [__REACT_PREPARE__]: {
+    prepare: PrepareHookFunction;
+  };
 };

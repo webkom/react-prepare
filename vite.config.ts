@@ -19,6 +19,9 @@ export default defineConfig({
       },
     },
   },
-  test: {},
+  test: {
+    globals: true,
+    environment: 'jsdom',
+  },
   plugins: [react()],
 });

@@ -12,6 +12,7 @@ import getElementType, { ELEMENT_TYPE } from './utils/getElementType';
 import getContextValue from './utils/getContextValue';
 import {
   dispatcherIsRegistered,
+  popPreparedHookPromises,
   registerDispatcher,
   setDispatcherContext,
 } from './utils/dispatcher';
@@ -199,7 +200,8 @@ async function prepare(
   return Promise.all(
     React.Children.toArray(children)
       .map((child) => prepare(child, options, childContext))
-      .concat(preparePromise || []),
+      .concat(preparePromise || [])
+      .concat(popPreparedHookPromises()),
   );
 }
 

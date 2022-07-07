@@ -3,15 +3,17 @@ import { __REACT_PREPARE__ } from '../constants';
 import React, {
   Context,
   DispatchWithoutAction,
+  EffectCallback,
   Reducer,
   ReducerState,
 } from 'react';
 import { ReactDispatcher, ReactWithInternals } from './reactInternalTypes';
-import { PrepareContext } from '../types';
+import { PrepareContext, PrepareHookEffect } from '../types';
 
 type Dispatcher = ReactDispatcher & {
   [__REACT_PREPARE__]: {
     context: PrepareContext;
+    usePreparedPromises: Promise<unknown>[];
   };
 };
 
@@ -26,10 +28,23 @@ function readContext<T>(this: Dispatcher, context: Context<T>): T {
   return getContextValue(this[__REACT_PREPARE__].context, context);
 }
 
+const isPrepareHookEffect = (
+  effect: EffectCallback | PrepareHookEffect,
+): effect is PrepareHookEffect => {
+  return !!(effect as Partial<PrepareHookEffect>)[__REACT_PREPARE__];
+};
+
+function useEffect(this: Dispatcher, effect: EffectCallback): void {
+  if (isPrepareHookEffect(effect)) {
+    const { usePreparedPromises } = this[__REACT_PREPARE__];
+    usePreparedPromises.push(effect[__REACT_PREPARE__].prepare());
+  }
+}
+
 const dispatcher: Dispatcher = {
   readContext: readContext,
   useContext: readContext,
-  useEffect: noOp,
+  useEffect: useEffect,
   useState: <S>(initialValue?: S | (() => S)): [unknown, typeof noOp] => [
     initialValue instanceof Function ? initialValue() : initialValue,
     noOp,
@@ -58,6 +73,7 @@ const dispatcher: Dispatcher = {
 
   [__REACT_PREPARE__]: {
     context: {},
+    usePreparedPromises: [],
   },
 };
 
@@ -71,3 +87,9 @@ export const registerDispatcher = (): void => {
 
 export const dispatcherIsRegistered = (): boolean =>
   ReactInternals.ReactCurrentDispatcher.current === dispatcher;
+
+export const popPreparedHookPromises = (): Promise<unknown>[] => {
+  const promises = dispatcher[__REACT_PREPARE__].usePreparedPromises;
+  dispatcher[__REACT_PREPARE__].usePreparedPromises = [];
+  return promises;
+};
