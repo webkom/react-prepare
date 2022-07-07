@@ -3,15 +3,18 @@ import { __REACT_PREPARE__ } from '../constants';
 import React, {
   Context,
   DispatchWithoutAction,
+  EffectCallback,
   Reducer,
   ReducerState,
 } from 'react';
 import { ReactDispatcher, ReactWithInternals } from './reactInternalTypes';
-import { PrepareContext } from '../types';
+import { PrepareContext, PrepareHookEffect } from '../types';
 
 export type Dispatcher = ReactDispatcher & {
   [__REACT_PREPARE__]: {
     context: PrepareContext;
+    hookPromises: Promise<unknown>[];
+    preparedHookIdentifiers: string[];
   };
 };
 
@@ -26,10 +29,24 @@ function readContext<T>(this: Dispatcher, context: Context<T>): T {
   return getContextValue(this[__REACT_PREPARE__].context, context);
 }
 
+const isPrepareHookEffect = (
+  effect: EffectCallback | PrepareHookEffect,
+): effect is PrepareHookEffect => {
+  return !!(effect as Partial<PrepareHookEffect>)[__REACT_PREPARE__];
+};
+
+function useEffect(this: Dispatcher, effect: EffectCallback): void {
+  if (isPrepareHookEffect(effect)) {
+    const { hookPromises, preparedHookIdentifiers } = this[__REACT_PREPARE__];
+    hookPromises.push(effect[__REACT_PREPARE__].prepare());
+    preparedHookIdentifiers.push(effect[__REACT_PREPARE__].identifier);
+  }
+}
+
 export const createDispatcher = (): Dispatcher => ({
   readContext: readContext,
   useContext: readContext,
-  useEffect: noOp,
+  useEffect: useEffect,
   useState: <S>(initialValue?: S | (() => S)): [unknown, typeof noOp] => [
     initialValue instanceof Function ? initialValue() : initialValue,
     noOp,
@@ -58,6 +75,8 @@ export const createDispatcher = (): Dispatcher => ({
 
   [__REACT_PREPARE__]: {
     context: {},
+    hookPromises: [],
+    preparedHookIdentifiers: [],
   },
 });
 
@@ -70,4 +89,18 @@ export const setDispatcherContext = (
 
 export const registerDispatcher = (dispatcher: Dispatcher): void => {
   ReactInternals.ReactCurrentDispatcher.current = dispatcher;
+};
+
+export const popHookPromises = (dispatcher: Dispatcher): Promise<unknown>[] => {
+  const promises = dispatcher[__REACT_PREPARE__].hookPromises;
+  dispatcher[__REACT_PREPARE__].hookPromises = [];
+  return promises;
+};
+
+export const popPreparedHookIdentifiers = (
+  dispatcher: Dispatcher,
+): string[] => {
+  const identifiers = dispatcher[__REACT_PREPARE__].preparedHookIdentifiers;
+  dispatcher[__REACT_PREPARE__].preparedHookIdentifiers = [];
+  return identifiers;
 };

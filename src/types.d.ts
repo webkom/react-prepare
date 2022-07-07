@@ -1,4 +1,4 @@
-import { Component, ComponentType, Provider } from 'react';
+import { Component, ComponentType, EffectCallback, Provider } from 'react';
 import { __REACT_PREPARE__ } from './constants';
 import { Dispatch } from 'redux';
 import PropTypes from 'prop-types';
@@ -55,3 +55,22 @@ export type ClassComponentInstance<P, S = unknown> = Omit<
   };
   getChildContext?: () => PrepareContext;
 };
+
+export type PrepareHookFunction = () => Promise<void>;
+
+export type PrepareHookEffect = EffectCallback & {
+  [__REACT_PREPARE__]: {
+    identifier: string;
+    prepare: PrepareHookFunction;
+  };
+};
+
+// declare the [__REACT_PREPARE__] property on the global Window interface
+// for correct type checking on global context set on ssr
+declare global {
+  interface Window {
+    [__REACT_PREPARE__]?: {
+      preparedEffects: string[];
+    };
+  }
+}

@@ -22,6 +22,7 @@ import PropTypes from 'prop-types';
 import { renderToStaticMarkup } from 'react-dom/server';
 import prepared from '../prepared';
 import prepare from '../prepare';
+import { usePreparedEffect } from '../index';
 
 describe('prepare', () => {
   it('sets instance properties', async () => {
@@ -694,5 +695,29 @@ describe('prepare', () => {
       html,
       '<ul><li><span class="prepared(FirstChild)">first</span></li><li><span class="prepared(SecondChild)">second</span></li></ul>',
     );
+  });
+
+  it('Awaits correct promises when preparing multiple components', async () => {
+    let numAwaited = 0;
+
+    const effect = (timeout) => async () => {
+      await new Promise((resolve) => setTimeout(resolve, timeout));
+      numAwaited++;
+    };
+
+    const SlowComponent = () => {
+      usePreparedEffect('slowEffect', effect(1000), []);
+      return <div />;
+    };
+
+    const FastComponent = () => {
+      usePreparedEffect('fastEffect', effect(0), []);
+      return <div />;
+    };
+
+    prepare(<SlowComponent />);
+    await prepare(<FastComponent />);
+
+    assert.equal(numAwaited, 1, 'Only fast effect has been awaited');
   });
 });

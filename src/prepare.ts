@@ -13,6 +13,8 @@ import getContextValue from './utils/getContextValue';
 import {
   createDispatcher,
   Dispatcher,
+  popHookPromises,
+  popPreparedHookIdentifiers,
   registerDispatcher,
   setDispatcherContext,
 } from './utils/dispatcher';
@@ -27,6 +29,7 @@ import {
   MemoElement,
   ProviderElement,
 } from './utils/reactInternalTypes';
+import { __REACT_PREPARE__ } from './constants';
 
 const updater = {
   enqueueSetState<P, S>(
@@ -201,7 +204,8 @@ async function internalPrepare(
   return Promise.all(
     React.Children.toArray(children)
       .map((child) => internalPrepare(child, options, childContext, dispatcher))
-      .concat(preparePromise || []),
+      .concat(preparePromise || [])
+      .concat(popHookPromises(dispatcher)),
   );
 }
 
@@ -209,7 +213,13 @@ async function prepare(
   element: ReactNode,
   options: PrepareOptions = {},
 ): Promise<unknown> {
-  return internalPrepare(element, options, undefined, createDispatcher());
+  const dispatcher = createDispatcher();
+
+  await internalPrepare(element, options, undefined, dispatcher);
+
+  return `window["${__REACT_PREPARE__}"] = { preparedEffects: ${JSON.stringify(
+    popPreparedHookIdentifiers(dispatcher),
+  )} };`;
 }
 
 export default prepare;
