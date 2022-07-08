@@ -1,8 +1,8 @@
-## react-prepare
+# react-prepare
 
 `react-prepare` allows you to have you deeply nested components with asynchronous dependencies, and have everything just work with server-side rendering.
 
-The typical use-case is when a deeply-nested component needs to have a resource fetched from a remote HTTP server, such as GraphQL or REST API. Since `renderToString` is synchronous, when you call it on your app, this component won't render correctly.
+The typical use-case is when a deeply-nested component needs to have a resource fetched from a remote HTTP server, such as GraphQL or REST API. Since `renderToString` is synchronous, when you call it on your app, none of your data will be loaded.
 
 One solution is to have a central router at the root of your application that knows exactly what data needs to be fetched before rendering. But this solution doesn't fit the component-based architecture of a typical React app. You want to declare data dependencies at the component level, much like your declare your props.
 
@@ -10,29 +10,32 @@ This is exactly what `react-prepare` does: it allows you to declare asynchronous
 
 `react-prepare` is agnostic and can be used vanilla, but it comes with a tiny helper that makes it extremely easy to use along `redux` and `react-redux` (see examples below).
 
-#### Example with `react-redux`
+### Example with `react-redux`
 
 Let's assume you have defined an async action creator `fetchTodoItems(userName)` which performs HTTP request to your server to retrieve the todo items for a given user and stores the result in your redux state.
 
 Your `TodoList` component definition would look like this:
 
-```js
-import { dispatched } from 'react-prepare';
-import { connect } from 'react-redux';
-import { compose } from 'redux';
+```jsx
+import { usePrepareDispatch } from 'react-prepare';
+import { useSelector } from 'react-redux';
 
 import { fetchTodoItems } from './actions';
 
-const enhance = compose(
-  dispatched(({ userName }, dispatch) => dispatch(fetchTodoItems(userName))),
-  connect(({ todoItems }) => ({ items: todoItems }),
-);
+const TodoList = ({ userName }) => {
+  usePrepareDispatch(fetchTodoItems(userName), [userName]);
+  const items = useSelector(({ todoItems }) => todoItems);
+  
+  return (
+    <ul>
+      {items.map((item, key) => (
+        <li key={key}>{item}</li>
+      ))}
+    </ul>
+  );
+};
 
-const TodoList = ({ items }) => <ul>{items.map((item, key) =>
-  <li key={key}>{item}</li>
-</ul>}</ul>;
-
-export default enhance(TodoList);
+export default TodoList;
 ```
 
 And your server-side rendering code would look like this:
@@ -75,7 +78,56 @@ render(
 
 **For a complete example of a fully-functional app using `react-prepare` in conjunction with `redux`, see the [react-prepare-todo](https://github.com/elierotenberg/react-prepare-todo) repository.**
 
-### API
+## API
+
+### Hooks
+
+#### `usePrepareDispatch(action: Action, deps: DependencyList, opts): void`
+
+Helper to use `usePrepare` more simply if your side effect consists of dispatching a redux action.
+
+Instead of manually getting `dispatch` with `useDispatch`, `usePrepareDispatch` will do it for you. This way you can easily dispatch actions like fetching data from the API, on both client and SSR with one simple hook. The action will be re-dispatched on the client if any of the dependencies change.
+
+```js
+const TodoItems = ({ userName }) => {
+  usePrepareDispatch(fetchTodoItems(userName), [userName]);
+  { ... }
+}
+```
+
+The component will have the following behavior:
+
+- when server-side rendered using `prepare`, `action` will be dispatched and awaited before components are rendered; If an error is thrown, the `errorHandler` provided to `prepare` will handle it.
+- when client-side rendered, `action` will be dispatched after the initial render in a `useEffect` hook. `deps` is passed directly on to the `useEffect` and thus `action` will be re-dispatched whenever a dependency changes.
+
+`opts` is an optional configuration object passed directly to the underlying `usePrepare` hook (see below).
+
+#### `usePrepare(effect: () => Promise<void>, deps: DependencyList, opts): void`
+
+Registers a side effect such that when `prepare` is called, `sideEffect` is awaited as part of the resulting `Promise`. The `sideEffect` will be re-executed client-side whenever any of the dependencies change.
+
+Available `opts` is an optional configuration object:
+
+- `opts.runOnClient` (default: `true`): on the client, `sideEffect` is called in a `useEffect` that is supplied with the given dependency array.
+- `opts.awaitOnSsr` (default: `false`): on the server, should `prepare` await `sideEffect` before traversing further down the tree. When `false` the promise will be awaited before `prepare` returns. This is useful if the side effect loads state that is needed in a different side effect further down the component tree.
+
+### SSR
+
+#### `prepare(Element, opts): Promise`
+
+Recursively traverses the element rendering tree and awaits any side effects registered with `usePrepare` (or `usePrepareDispatch`).
+It should be used (and `await`-ed) _before_ calling `renderToString` on the server. If any of the side effects throws, `prepare` will throw unless `opts.errorHandler` is supplied.
+
+`opts` is an optional configuration object.
+
+Available `opts` is an optional configuration object:
+
+- `opts.errorHandler` (default: `e => {throw e}`): Custom error handler used by each `sideEffect`. If a `sideEffect` throws, this is used as an error handler. If
+  the error handler then throws, `prepare` throws.
+
+### Higher order components
+`react-prepare` provides two higher order components, `prepared` and `dispatched` that will wrap your component such that your side effect is registered with a `usePrepare` hook.
+This will help with the transition from version 0.x to 1.x, as the API is very similar (some `opts` are no longer supported).
 
 #### `dispatched(sideEffect: async(props, dispatch), opts)(Component)`
 
@@ -94,35 +146,20 @@ const DispatchedTodoItems = dispatched(
 )(TodoItems);
 ```
 
-The decorated component will have the following behavior:
+The decorated component will behave exactly like a component using `usePrepareDispatch`
 
-- when server-side rendered using `prepare`, `sideEffect` will be run and awaited before the component is rendered; if `sideEffect` throws, `prepare` will also throw.
-- when client-side rendered, `sideEffect` will be called on `componentDidMount` and `componentWillReceiveProps`.
+NB: The behaviour is changed slightly compared with version 0.x
 
-`opts` is an optional configuration object passed directly to the underlying `prepared` decorator (see below).
+`opts` is passed to the underlying `usePrepareDispatch`. Note that `awaitOnSsr` is enabled by default for backwards-compatibility reasons.
 
 #### `prepared(sideEffect: async(props, context), opts)(Component)`
 
-Decorates `Component` so that when `prepare` is called, `sideEffect` is called (and awaited) before continuing the rendering traversal.
+Wraps `Component` so that `sideEffect` is registered using the `usePrepare` hook. Note that `opts.awaitOnSsr` is enabled by default for backwards-compatibility reasons.
 
 Available `opts` is an optional configuration object:
 
-- `opts.pure` (default: `true`): the decorated component extends `PureComponent` instead of `Component`.
-- `opts.componentDidMount` (default: `true`): on the client, `sideEffect` is called when the component is mounted.
-- `opts.componentWillReceiveProps` (default: `true`): on the client, `sideEffect` is called again whenever the component receive props.
+- `opts.runOnClient` (default: `true`): on the client, `sideEffect` is called in a `useEffect` that is supplied with the given dependency array.
 - `opts.awaitOnSsr` (default: `true`): on the server, should `prepare` await `sideEffect` before traversing further down the tree. When `false` the promise will be awaited before `prepare` returns.
-
-#### `async prepare(Element, ?opts)`
-
-Recursively traverses the element rendering tree and awaits the side effects of components decorated with `prepared` (or `dispatched`).
-It should be used (and `await`-ed) _before_ calling `renderToString` on the server. If any of the side effects throws, `prepare` will also throw.
-
-`opts` is an optional configuration object.
-
-Available `opts` is an optional configuration object:
-
-- `opts.errorHandler` (default: `e => {throw e}`): Custom error handler used by each `sideEffect`. If a `sideEffect` throws, this is used as an error handler. If
-  the error handler then throws, the `prepare`.
 
 ### Notes
 
