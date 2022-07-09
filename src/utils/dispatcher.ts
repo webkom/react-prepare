@@ -14,6 +14,7 @@ type Dispatcher = ReactDispatcher & {
   [__REACT_PREPARE__]: {
     context: PrepareContext;
     usePreparedPromises: Promise<unknown>[];
+    awaitImmediatelyPromises: Promise<unknown>[];
   };
 };
 
@@ -36,8 +37,13 @@ const isPrepareHookEffect = (
 
 function useEffect(this: Dispatcher, effect: EffectCallback): void {
   if (isPrepareHookEffect(effect)) {
-    const { usePreparedPromises } = this[__REACT_PREPARE__];
-    usePreparedPromises.push(effect[__REACT_PREPARE__].prepare());
+    const { prepare, awaitImmediately } = effect[__REACT_PREPARE__];
+
+    if (awaitImmediately) {
+      this[__REACT_PREPARE__].awaitImmediatelyPromises.push(prepare());
+    } else {
+      this[__REACT_PREPARE__].usePreparedPromises.push(prepare());
+    }
   }
 }
 
@@ -74,6 +80,7 @@ const dispatcher: Dispatcher = {
   [__REACT_PREPARE__]: {
     context: {},
     usePreparedPromises: [],
+    awaitImmediatelyPromises: [],
   },
 };
 
@@ -91,5 +98,11 @@ export const dispatcherIsRegistered = (): boolean =>
 export const popPreparedHookPromises = (): Promise<unknown>[] => {
   const promises = dispatcher[__REACT_PREPARE__].usePreparedPromises;
   dispatcher[__REACT_PREPARE__].usePreparedPromises = [];
+  return promises;
+};
+
+export const popAwaitImmediatelyPromises = () => {
+  const promises = dispatcher[__REACT_PREPARE__].awaitImmediatelyPromises;
+  dispatcher[__REACT_PREPARE__].awaitImmediatelyPromises = [];
   return promises;
 };

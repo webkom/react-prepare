@@ -4,6 +4,7 @@ import { __REACT_PREPARE__ } from './constants';
 
 interface Options {
   runOnClient?: boolean;
+  awaitImmediately?: boolean;
 }
 
 const usePreparedEffect = (
@@ -11,7 +12,7 @@ const usePreparedEffect = (
   deps: DependencyList = [],
   opts: Options = {},
 ) => {
-  const { runOnClient = true } = opts;
+  const { runOnClient = true, awaitImmediately = false } = opts;
 
   const effect = (): void => {
     if (runOnClient) {
@@ -21,6 +22,7 @@ const usePreparedEffect = (
 
   (effect as PrepareHookEffect)[__REACT_PREPARE__] = {
     prepare: prepareFunction,
+    awaitImmediately,
   };
 
   useEffect(effect, deps);

@@ -85,6 +85,71 @@ describe('usePreparedEffect', () => {
     );
   });
 
+  it('should await effect before traversing children when awaitImmediately=true', async () => {
+    let parentEffectAwaited = false;
+    const parentEffect = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      parentEffectAwaited = true;
+    };
+
+    const childEffect = sinon.spy(() => {});
+
+    const Component = ({ children }) => {
+      usePreparedEffect(parentEffect, [], { awaitImmediately: true });
+      return <div>{children}</div>;
+    };
+
+    const ChildComponent = () => {
+      usePreparedEffect(() => childEffect(parentEffectAwaited));
+      return <div />;
+    };
+
+    await prepare(
+      <Component>
+        <ChildComponent />
+      </Component>,
+    );
+
+    assert(parentEffectAwaited);
+    assert(childEffect.calledOnce);
+    assert(childEffect.calledWith(true));
+  });
+
+  it('should await multiple side-effects with awaitImmediately=true', async () => {
+    let parentEffectsAwaited = 0;
+    const parentEffect = (timeout) => async () => {
+      await new Promise((resolve) => setTimeout(resolve, timeout));
+      parentEffectsAwaited++;
+    };
+
+    const childEffect = sinon.spy(() => {});
+
+    const Component = ({ children }) => {
+      usePreparedEffect(parentEffect(0), [], { awaitImmediately: true });
+      usePreparedEffect(parentEffect(10), [], { awaitImmediately: true });
+      usePreparedEffect(parentEffect(0), [], { awaitImmediately: true });
+      return <div>{children}</div>;
+    };
+
+    const ChildComponent = () => {
+      usePreparedEffect(parentEffect(0), [], { awaitImmediately: true });
+      usePreparedEffect(() => childEffect(parentEffectsAwaited));
+      return <div />;
+    };
+
+    await prepare(
+      <Component>
+        <Component>
+          <ChildComponent />
+        </Component>
+      </Component>,
+    );
+
+    assert(childEffect.calledOnce);
+    // Should have prepared 2x Component with 3 prepared effects each + 1 in ChildComponent
+    assert(childEffect.calledWith(6));
+  });
+
   it('should run effect after rendering on client-side', () => {
     const Component = () => {
       usePreparedEffect(prepareFunction);

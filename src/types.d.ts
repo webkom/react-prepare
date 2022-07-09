@@ -61,5 +61,6 @@ export type PrepareHookFunction = () => Promise<void>;
 export type PrepareHookEffect = EffectCallback & {
   [__REACT_PREPARE__]: {
     prepare: PrepareHookFunction;
+    awaitImmediately: boolean;
   };
 };

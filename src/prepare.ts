@@ -12,6 +12,7 @@ import getElementType, { ELEMENT_TYPE } from './utils/getElementType';
 import getContextValue from './utils/getContextValue';
 import {
   dispatcherIsRegistered,
+  popAwaitImmediatelyPromises,
   popPreparedHookPromises,
   registerDispatcher,
   setDispatcherContext,
@@ -156,7 +157,9 @@ async function prepareElement(
     case ELEMENT_TYPE.FUNCTION_COMPONENT: {
       const functionElement = element as FunctionComponentElement<unknown>;
       setDispatcherContext(context);
-      return [functionElement.type(functionElement.props), context];
+      const children = functionElement.type(functionElement.props);
+      await Promise.all(popAwaitImmediatelyPromises());
+      return [children, context];
     }
     case ELEMENT_TYPE.CLASS_COMPONENT: {
       return prepareCompositeElement(
