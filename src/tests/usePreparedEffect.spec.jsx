@@ -67,6 +67,24 @@ describe('usePreparedEffect', () => {
     );
   });
 
+  it('should still run effect server-side with runOnClient=false', async () => {
+    const Component = () => {
+      usePreparedEffect(prepareFunction, [], { runOnClient: false });
+      return <div />;
+    };
+
+    await prepare(<Component />);
+
+    assert(
+      prepareFunction.calledOnce,
+      'prepareFunction has been called exactly once',
+    );
+    assert(
+      doAsyncSideEffect.calledOnce,
+      'async side effect has been called exactly once',
+    );
+  });
+
   it('should run effect after rendering on client-side', () => {
     const Component = () => {
       usePreparedEffect(prepareFunction);
@@ -136,6 +154,20 @@ describe('usePreparedEffect', () => {
     assert(
       prepareFunction.calledOnce,
       'prepareFunction has not been called again on re-rerender with same dependency',
+    );
+  });
+
+  it('should not run effect client-side when runOnClient=false', () => {
+    const Component = () => {
+      usePreparedEffect(prepareFunction, [], { runOnClient: false });
+      return <div />;
+    };
+
+    render(<Component />);
+
+    assert(
+      prepareFunction.notCalled,
+      'prepareFunction has not been called on client-side',
     );
   });
 });
