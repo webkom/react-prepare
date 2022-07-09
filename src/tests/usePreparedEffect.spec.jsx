@@ -71,6 +71,79 @@ describe('usePreparedEffect', () => {
     );
   });
 
+  it('should await effect before traversing children when runSync=true', async () => {
+    let parentEffectAwaited = false;
+    const parentEffect = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      parentEffectAwaited = true;
+    };
+
+    const childEffect = sinon.spy(() => {});
+
+    const Component = ({ children }) => {
+      usePreparedEffect('effect', parentEffect, [], { runSync: true });
+      return <div>{children}</div>;
+    };
+
+    const ChildComponent = () => {
+      usePreparedEffect('childEffect', () => childEffect(parentEffectAwaited));
+      return <div />;
+    };
+
+    await prepare(
+      <Component>
+        <ChildComponent />
+      </Component>,
+    );
+
+    assert(parentEffectAwaited);
+    assert(childEffect.calledOnce);
+    assert(childEffect.calledWith(true));
+  });
+
+  it('should await multiple side-effects with runSync=true', async () => {
+    let parentEffectsAwaited = 0;
+    const parentEffect = (timeout) => async () => {
+      await new Promise((resolve) => setTimeout(resolve, timeout));
+      parentEffectsAwaited++;
+    };
+
+    const childEffect = sinon.spy(() => {});
+
+    const Component = ({ children }) => {
+      usePreparedEffect('effect1', parentEffect(0), [], {
+        runSync: true,
+      });
+      usePreparedEffect('effect2', parentEffect(10), [], {
+        runSync: true,
+      });
+      usePreparedEffect('effect3', parentEffect(0), [], {
+        runSync: true,
+      });
+      return <div>{children}</div>;
+    };
+
+    const ChildComponent = () => {
+      usePreparedEffect('childImmediate', parentEffect(0), [], {
+        runSync: true,
+      });
+      usePreparedEffect('childEffect', () => childEffect(parentEffectsAwaited));
+      return <div />;
+    };
+
+    await prepare(
+      <Component>
+        <Component>
+          <ChildComponent />
+        </Component>
+      </Component>,
+    );
+
+    assert(childEffect.calledOnce);
+    // Should have prepared 2x Component with 3 prepared effects each + 1 in ChildComponent
+    assert(childEffect.calledWith(6));
+  });
+
   it('should run effect after rendering on client-side when NOT prepared', () => {
     const Component = () => {
       usePreparedEffect('effect', prepareFunction);

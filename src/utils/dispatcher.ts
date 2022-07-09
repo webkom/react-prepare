@@ -14,6 +14,7 @@ export type Dispatcher = ReactDispatcher & {
   [__REACT_PREPARE__]: {
     context: PrepareContext;
     hookPromises: Promise<unknown>[];
+    syncHookPromises: Promise<unknown>[];
     preparedHookIdentifiers: string[];
   };
 };
@@ -37,9 +38,17 @@ const isPrepareHookEffect = (
 
 function useEffect(this: Dispatcher, effect: EffectCallback): void {
   if (isPrepareHookEffect(effect)) {
-    const { hookPromises, preparedHookIdentifiers } = this[__REACT_PREPARE__];
-    hookPromises.push(effect[__REACT_PREPARE__].prepare());
+    const { hookPromises, preparedHookIdentifiers, syncHookPromises } =
+      this[__REACT_PREPARE__];
+    const { prepare, runSync } = effect[__REACT_PREPARE__];
+
     preparedHookIdentifiers.push(effect[__REACT_PREPARE__].identifier);
+
+    if (runSync) {
+      syncHookPromises.push(prepare());
+    } else {
+      hookPromises.push(prepare());
+    }
   }
 }
 
@@ -76,6 +85,7 @@ export const createDispatcher = (): Dispatcher => ({
   [__REACT_PREPARE__]: {
     context: {},
     hookPromises: [],
+    syncHookPromises: [],
     preparedHookIdentifiers: [],
   },
 });
@@ -94,6 +104,14 @@ export const registerDispatcher = (dispatcher: Dispatcher): void => {
 export const popHookPromises = (dispatcher: Dispatcher): Promise<unknown>[] => {
   const promises = dispatcher[__REACT_PREPARE__].hookPromises;
   dispatcher[__REACT_PREPARE__].hookPromises = [];
+  return promises;
+};
+
+export const popSyncHookPromises = (
+  dispatcher: Dispatcher,
+): Promise<unknown>[] => {
+  const promises = dispatcher[__REACT_PREPARE__].syncHookPromises;
+  dispatcher[__REACT_PREPARE__].syncHookPromises = [];
   return promises;
 };
 

@@ -13,6 +13,7 @@ import getContextValue from './utils/getContextValue';
 import {
   createDispatcher,
   Dispatcher,
+  popSyncHookPromises,
   popHookPromises,
   popPreparedHookIdentifiers,
   registerDispatcher,
@@ -162,7 +163,9 @@ async function prepareElement(
       const functionElement = element as FunctionComponentElement<unknown>;
       setDispatcherContext(dispatcher, context);
       registerDispatcher(dispatcher);
-      return [functionElement.type(functionElement.props), context];
+      const children: ReactNode = functionElement.type(functionElement.props);
+      await Promise.all(popSyncHookPromises(dispatcher));
+      return [children, context];
     }
     case ELEMENT_TYPE.CLASS_COMPONENT: {
       return prepareCompositeElement(

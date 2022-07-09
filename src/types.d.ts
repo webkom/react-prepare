@@ -62,6 +62,7 @@ export type PrepareHookEffect = EffectCallback & {
   [__REACT_PREPARE__]: {
     identifier: string;
     prepare: PrepareHookFunction;
+    runSync: boolean;
   };
 };
 
