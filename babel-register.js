@@ -1,3 +1,3 @@
 const register = require('@babel/register').default;
 
-register({ extensions: ['.js', '.jsx'] });
+register({ extensions: ['.ts', '.tsx', '.js', '.jsx'] });
