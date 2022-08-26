@@ -2,7 +2,7 @@ import { PrepareHookEffect, PrepareHookFunction } from './types';
 import { DependencyList, EffectCallback, useEffect, useRef } from 'react';
 import { __REACT_PREPARE__ } from './constants';
 
-interface Options {
+export interface PreparedEffectOptions {
   runSync?: boolean;
 }
 
@@ -10,7 +10,7 @@ const usePreparedEffect = (
   identifier: string,
   prepareFunction: PrepareHookFunction,
   deps?: DependencyList,
-  { runSync = false }: Options = {},
+  { runSync = false }: PreparedEffectOptions = {},
 ): void => {
   // keep track of whether it is the initial effect-run or not, as only the first run is affected by server-preparing
   const isInitialRunOnClient = useRef(true);
