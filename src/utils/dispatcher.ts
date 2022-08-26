@@ -2,7 +2,6 @@ import getContextValue from './getContextValue';
 import { __REACT_PREPARE__ } from '../constants';
 import React, {
   Context,
-  Dispatch,
   DispatchWithoutAction,
   Reducer,
   ReducerState,

@@ -49,7 +49,7 @@ const updater = {
 function createCompositeElementInstance<P>(
   { type: CompositeComponent, props }: ClassicElement<P>,
   context: PrepareContext,
-) {
+): ClassComponentInstance<P> {
   const instance: ClassComponentInstance<P> = new CompositeComponent(
     props,
     context,
