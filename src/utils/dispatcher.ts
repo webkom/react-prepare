@@ -19,7 +19,9 @@ type Dispatcher = ReactDispatcher & {
 const ReactInternals = (React as ReactWithInternals)
   .__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
 
-const noOp = () => {};
+const noOp = (): void => {
+  // do nothing
+};
 
 function readContext<T>(this: Dispatcher, context: Context<T>): T {
   return getContextValue(this[__REACT_PREPARE__].context, context);
@@ -60,11 +62,13 @@ const dispatcher: Dispatcher = {
   },
 };
 
-export const setDispatcherContext = (context: PrepareContext) =>
-  (dispatcher[__REACT_PREPARE__].context = context);
+export const setDispatcherContext = (context: PrepareContext): void => {
+  dispatcher[__REACT_PREPARE__].context = context;
+};
 
-export const registerDispatcher = () =>
-  (ReactInternals.ReactCurrentDispatcher.current = dispatcher);
+export const registerDispatcher = (): void => {
+  ReactInternals.ReactCurrentDispatcher.current = dispatcher;
+};
 
-export const dispatcherIsRegistered = () =>
+export const dispatcherIsRegistered = (): boolean =>
   ReactInternals.ReactCurrentDispatcher.current === dispatcher;
