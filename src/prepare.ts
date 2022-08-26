@@ -11,7 +11,8 @@ import { isPrepared, getPrepare, shouldAwaitOnSsr } from './prepared';
 import getElementType, { ELEMENT_TYPE } from './utils/getElementType';
 import getContextValue from './utils/getContextValue';
 import {
-  dispatcherIsRegistered,
+  createDispatcher,
+  Dispatcher,
   registerDispatcher,
   setDispatcherContext,
 } from './utils/dispatcher';
@@ -108,6 +109,7 @@ async function prepareElement(
   element: ReactNode,
   errorHandler: (error: unknown) => void,
   context: PrepareContext,
+  dispatcher: Dispatcher,
 ): Promise<[ReactNode, PrepareContext, Promise<void>?]> {
   switch (getElementType(element)) {
     case ELEMENT_TYPE.NOTHING:
@@ -150,11 +152,13 @@ async function prepareElement(
         { ...memoElement, type: memoElement.type.type },
         errorHandler,
         context,
+        dispatcher,
       );
     }
     case ELEMENT_TYPE.FUNCTION_COMPONENT: {
       const functionElement = element as FunctionComponentElement<unknown>;
-      setDispatcherContext(context);
+      setDispatcherContext(dispatcher, context);
+      registerDispatcher(dispatcher);
       return [functionElement.type(functionElement.props), context];
     }
     case ELEMENT_TYPE.CLASS_COMPONENT: {
@@ -174,10 +178,11 @@ interface PrepareOptions {
   errorHandler?: (error: unknown) => void;
 }
 
-async function prepare(
+async function internalPrepare(
   element: ReactNode,
   options: PrepareOptions = {},
   context: PrepareContext = {},
+  dispatcher: Dispatcher,
 ): Promise<unknown> {
   const {
     errorHandler = (error) => {
@@ -185,22 +190,26 @@ async function prepare(
     },
   } = options;
 
-  if (!dispatcherIsRegistered()) {
-    registerDispatcher();
-  }
-
   const [children, childContext, preparePromise] = await prepareElement(
     element,
     errorHandler,
     context,
+    dispatcher,
   );
 
   // Recursively run prepare on children, and return a promise that resolves once all children are prepared.
   return Promise.all(
     React.Children.toArray(children)
-      .map((child) => prepare(child, options, childContext))
+      .map((child) => internalPrepare(child, options, childContext, dispatcher))
       .concat(preparePromise || []),
   );
+}
+
+async function prepare(
+  element: ReactNode,
+  options: PrepareOptions = {},
+): Promise<unknown> {
+  return internalPrepare(element, options, undefined, createDispatcher());
 }
 
 export default prepare;

@@ -9,7 +9,7 @@ import React, {
 import { ReactDispatcher, ReactWithInternals } from './reactInternalTypes';
 import { PrepareContext } from '../types';
 
-type Dispatcher = ReactDispatcher & {
+export type Dispatcher = ReactDispatcher & {
   [__REACT_PREPARE__]: {
     context: PrepareContext;
   };
@@ -26,7 +26,7 @@ function readContext<T>(this: Dispatcher, context: Context<T>): T {
   return getContextValue(this[__REACT_PREPARE__].context, context);
 }
 
-const dispatcher: Dispatcher = {
+export const createDispatcher = (): Dispatcher => ({
   readContext: readContext,
   useContext: readContext,
   useEffect: noOp,
@@ -59,15 +59,15 @@ const dispatcher: Dispatcher = {
   [__REACT_PREPARE__]: {
     context: {},
   },
-};
+});
 
-export const setDispatcherContext = (context: PrepareContext): void => {
+export const setDispatcherContext = (
+  dispatcher: Dispatcher,
+  context: PrepareContext,
+): void => {
   dispatcher[__REACT_PREPARE__].context = context;
 };
 
-export const registerDispatcher = (): void => {
+export const registerDispatcher = (dispatcher: Dispatcher): void => {
   ReactInternals.ReactCurrentDispatcher.current = dispatcher;
 };
-
-export const dispatcherIsRegistered = (): boolean =>
-  ReactInternals.ReactCurrentDispatcher.current === dispatcher;
