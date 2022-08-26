@@ -9,9 +9,11 @@ import React, {
 } from 'react';
 import { ReactDispatcher, ReactWithInternals } from './reactInternalTypes';
 import { PrepareContext, PrepareHookEffect } from '../types';
+import isThenable from './isThenable';
 
 export type Dispatcher = ReactDispatcher & {
   [__REACT_PREPARE__]: {
+    errorHandler: (error: unknown) => void;
     context: PrepareContext;
     usePreparedPromises: Promise<unknown>[];
     awaitImmediatelyPromises: Promise<unknown>[];
@@ -38,16 +40,27 @@ const isPrepareHookEffect = (
 function useEffect(this: Dispatcher, effect: EffectCallback): void {
   if (isPrepareHookEffect(effect)) {
     const { prepare, awaitImmediately } = effect[__REACT_PREPARE__];
+    const prepareResult = prepare();
+
+    if (!isThenable(prepareResult)) {
+      return;
+    }
+
+    const preparePromise = prepareResult.catch(
+      this[__REACT_PREPARE__].errorHandler,
+    );
 
     if (awaitImmediately) {
-      this[__REACT_PREPARE__].awaitImmediatelyPromises.push(prepare());
+      this[__REACT_PREPARE__].awaitImmediatelyPromises.push(preparePromise);
     } else {
-      this[__REACT_PREPARE__].usePreparedPromises.push(prepare());
+      this[__REACT_PREPARE__].usePreparedPromises.push(preparePromise);
     }
   }
 }
 
-export const createDispatcher = (): Dispatcher => ({
+export const createDispatcher = (
+  errorHandler: (error: unknown) => void,
+): Dispatcher => ({
   readContext: readContext,
   useContext: readContext,
   useEffect: useEffect,
@@ -78,6 +91,7 @@ export const createDispatcher = (): Dispatcher => ({
     getServerSnapshot ? getServerSnapshot() : getSnapshot(),
 
   [__REACT_PREPARE__]: {
+    errorHandler,
     context: {},
     usePreparedPromises: [],
     awaitImmediatelyPromises: [],

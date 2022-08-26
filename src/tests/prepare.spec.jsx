@@ -22,7 +22,7 @@ import PropTypes from 'prop-types';
 import { renderToStaticMarkup } from 'react-dom/server';
 import prepared from '../prepared';
 import prepare from '../prepare';
-import { usePreparedEffect } from '../index';
+import { usePreparedEffect, withPreparedEffect } from '../index';
 
 describe('prepare', () => {
   it('sets instance properties', async () => {
@@ -146,6 +146,57 @@ describe('prepare', () => {
     };
 
     const App = prepared(prepareUsingProps)(({ text, children }) => (
+      <div>
+        {text} <div>{children ? children : null}</div>
+      </div>
+    ));
+    await prepare(
+      <App text="foo">
+        <App text="foo" />
+        <App text="foo" />
+      </App>,
+      { errorHandler: (e) => e },
+    );
+    assert(doAsyncSideEffect.calledThrice, 'Should be called 3 times');
+  });
+
+  it('Should throw exception using withPreparedEffect', async () => {
+    const doAsyncSideEffect = sinon.spy(async () => {
+      throw new Error('Err');
+    });
+    const prepareUsingProps = async ({ text }) => {
+      await doAsyncSideEffect(text);
+    };
+    const App = withPreparedEffect(prepareUsingProps)(({ text }) => (
+      <div>{text}</div>
+    ));
+    try {
+      await prepare(
+        <App text="foo">
+          <App text="foo" />
+          <App text="foo" />
+          <App text="foo" />
+          <App text="foo" />
+        </App>,
+      );
+    } catch (err) {
+      assert.equal(err.message, 'Err', 'Should throw the correct error');
+      assert(doAsyncSideEffect.calledOnce, 'Should be called once times');
+      return;
+    }
+    assert.fail('It should throw');
+  });
+
+  it("Should be possible to don't throw exception using withPreparedEffect", async () => {
+    const doAsyncSideEffect = sinon.spy(async () => {
+      throw new Error('Errooor');
+    });
+
+    const prepareUsingProps = async ({ text }) => {
+      await doAsyncSideEffect(text);
+    };
+
+    const App = withPreparedEffect(prepareUsingProps)(({ text, children }) => (
       <div>
         {text} <div>{children ? children : null}</div>
       </div>
