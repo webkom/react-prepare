@@ -2,7 +2,7 @@ import { PrepareHookEffect, PrepareHookFunction } from './types';
 import { DependencyList, useEffect } from 'react';
 import { __REACT_PREPARE__ } from './constants';
 
-interface Options {
+export interface PreparedEffectOptions {
   runOnClient?: boolean;
   awaitImmediately?: boolean;
 }
@@ -10,7 +10,7 @@ interface Options {
 const usePreparedEffect = (
   prepareFunction: PrepareHookFunction,
   deps: DependencyList = [],
-  opts: Options = {},
+  opts: PreparedEffectOptions = {},
 ) => {
   const { runOnClient = true, awaitImmediately = false } = opts;
 
