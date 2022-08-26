@@ -1,4 +1,4 @@
-const { describe, it } = global;
+import { describe, it } from 'vitest';
 import assert from 'assert/strict';
 import url from 'url';
 import React from 'react';
@@ -33,7 +33,7 @@ describe('dispatched', () => {
         port: echoHttpServer.address().port,
       };
 
-      // Action type constants, also used to expres fetch status
+      // Action type constants, also used to express fetch status
       const FETCH_STARTED = 'FETCH_STARTED';
       const FETCH_FAILED = 'FETCH_FAILED';
       const FETCH_SUCCEEDED = 'FETCH_SUCCEEDED';

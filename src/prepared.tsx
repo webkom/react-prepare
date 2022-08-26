@@ -28,8 +28,8 @@ const prepared =
       awaitOnSsr = true,
       contextTypes = {},
     }: PreparedOptions<P, C> = {},
-  ) =>
-  (OriginalComponent: ComponentType<P>) => {
+  ): ((OriginalComponent: ComponentType<P>) => ComponentType<P>) =>
+  (OriginalComponent) => {
     const { displayName } = OriginalComponent;
     class PreparedComponent extends (pure ? PureComponent : Component)<P> {
       static displayName = `PreparedComponent${

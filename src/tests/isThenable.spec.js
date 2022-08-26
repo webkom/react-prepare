@@ -1,4 +1,4 @@
-const { describe, it } = global;
+import { describe, it } from 'vitest';
 import assert from 'assert/strict';
 
 import isThenable from '../utils/isThenable';

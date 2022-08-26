@@ -19,5 +19,6 @@ jobs:
       - name: Install dependencies
         run: yarn
       - run: yarn run lint
+      - run: yarn run ts
       - run: yarn run test
       - run: yarn run build
