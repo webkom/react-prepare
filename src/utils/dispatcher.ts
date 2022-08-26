@@ -10,7 +10,7 @@ import React, {
 import { ReactDispatcher, ReactWithInternals } from './reactInternalTypes';
 import { PrepareContext, PrepareHookEffect } from '../types';
 
-type Dispatcher = ReactDispatcher & {
+export type Dispatcher = ReactDispatcher & {
   [__REACT_PREPARE__]: {
     context: PrepareContext;
     usePreparedPromises: Promise<unknown>[];
@@ -47,7 +47,7 @@ function useEffect(this: Dispatcher, effect: EffectCallback): void {
   }
 }
 
-const dispatcher: Dispatcher = {
+export const createDispatcher = (): Dispatcher => ({
   readContext: readContext,
   useContext: readContext,
   useEffect: useEffect,
@@ -82,26 +82,30 @@ const dispatcher: Dispatcher = {
     usePreparedPromises: [],
     awaitImmediatelyPromises: [],
   },
-};
+});
 
-export const setDispatcherContext = (context: PrepareContext): void => {
+export const setDispatcherContext = (
+  dispatcher: Dispatcher,
+  context: PrepareContext,
+): void => {
   dispatcher[__REACT_PREPARE__].context = context;
 };
 
-export const registerDispatcher = (): void => {
+export const registerDispatcher = (dispatcher: Dispatcher): void => {
   ReactInternals.ReactCurrentDispatcher.current = dispatcher;
 };
 
-export const dispatcherIsRegistered = (): boolean =>
-  ReactInternals.ReactCurrentDispatcher.current === dispatcher;
-
-export const popPreparedHookPromises = (): Promise<unknown>[] => {
+export const popPreparedHookPromises = (
+  dispatcher: Dispatcher,
+): Promise<unknown>[] => {
   const promises = dispatcher[__REACT_PREPARE__].usePreparedPromises;
   dispatcher[__REACT_PREPARE__].usePreparedPromises = [];
   return promises;
 };
 
-export const popAwaitImmediatelyPromises = () => {
+export const popAwaitImmediatelyPromises = (
+  dispatcher: Dispatcher,
+): Promise<unknown>[] => {
   const promises = dispatcher[__REACT_PREPARE__].awaitImmediatelyPromises;
   dispatcher[__REACT_PREPARE__].awaitImmediatelyPromises = [];
   return promises;
