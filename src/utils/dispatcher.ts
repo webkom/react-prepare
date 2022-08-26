@@ -9,9 +9,11 @@ import React, {
 } from 'react';
 import { ReactDispatcher, ReactWithInternals } from './reactInternalTypes';
 import { PrepareContext, PrepareHookEffect } from '../types';
+import isThenable from './isThenable';
 
 export type Dispatcher = ReactDispatcher & {
   [__REACT_PREPARE__]: {
+    errorHandler: (error: unknown) => void;
     context: PrepareContext;
     hookPromises: Promise<unknown>[];
     syncHookPromises: Promise<unknown>[];
@@ -41,18 +43,29 @@ function useEffect(this: Dispatcher, effect: EffectCallback): void {
     const { hookPromises, preparedHookIdentifiers, syncHookPromises } =
       this[__REACT_PREPARE__];
     const { prepare, runSync } = effect[__REACT_PREPARE__];
+    const prepareResult = prepare();
 
     preparedHookIdentifiers.push(effect[__REACT_PREPARE__].identifier);
 
+    if (!isThenable(prepareResult)) {
+      return;
+    }
+
+    const preparePromise = prepareResult.catch(
+      this[__REACT_PREPARE__].errorHandler,
+    );
+
     if (runSync) {
-      syncHookPromises.push(prepare());
+      syncHookPromises.push(preparePromise);
     } else {
-      hookPromises.push(prepare());
+      hookPromises.push(preparePromise);
     }
   }
 }
 
-export const createDispatcher = (): Dispatcher => ({
+export const createDispatcher = (
+  errorHandler: (error: unknown) => void,
+): Dispatcher => ({
   readContext: readContext,
   useContext: readContext,
   useEffect: useEffect,
@@ -83,6 +96,7 @@ export const createDispatcher = (): Dispatcher => ({
     getServerSnapshot ? getServerSnapshot() : getSnapshot(),
 
   [__REACT_PREPARE__]: {
+    errorHandler,
     context: {},
     hookPromises: [],
     syncHookPromises: [],

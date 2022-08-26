@@ -181,24 +181,18 @@ async function prepareElement(
 }
 
 interface PrepareOptions {
-  errorHandler?: (error: unknown) => void;
+  errorHandler: (error: unknown) => void;
 }
 
 async function internalPrepare(
   element: ReactNode,
-  options: PrepareOptions = {},
+  options: PrepareOptions,
   context: PrepareContext = {},
   dispatcher: Dispatcher,
 ): Promise<unknown> {
-  const {
-    errorHandler = (error) => {
-      throw error;
-    },
-  } = options;
-
   const [children, childContext, preparePromise] = await prepareElement(
     element,
-    errorHandler,
+    options.errorHandler,
     context,
     dispatcher,
   );
@@ -214,11 +208,18 @@ async function internalPrepare(
 
 async function prepare(
   element: ReactNode,
-  options: PrepareOptions = {},
+  options: Partial<PrepareOptions> = {},
 ): Promise<unknown> {
-  const dispatcher = createDispatcher();
+  const fullOptions: PrepareOptions = {
+    errorHandler: (error) => {
+      throw error;
+    },
+    ...options,
+  };
 
-  await internalPrepare(element, options, undefined, dispatcher);
+  const dispatcher = createDispatcher(fullOptions.errorHandler);
+
+  await internalPrepare(element, fullOptions, undefined, dispatcher);
 
   return `window["${__REACT_PREPARE__}"] = { preparedEffects: ${JSON.stringify(
     popPreparedHookIdentifiers(dispatcher),
