@@ -21,7 +21,7 @@ function isReactElement(element: ReactNode): element is ReactElement {
   return !!element && typeof element === 'object';
 }
 
-export default function getElementType(element: ReactNode) {
+export default function getElementType(element: ReactNode): ELEMENT_TYPE {
   if (isTextNode(element)) {
     return ELEMENT_TYPE.TEXT_NODE;
   } else if (!isReactElement(element)) {

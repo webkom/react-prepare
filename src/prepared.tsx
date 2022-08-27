@@ -1,4 +1,9 @@
-import React, { PureComponent, Component, ComponentType } from 'react';
+import React, {
+  PureComponent,
+  Component,
+  ComponentType,
+  ReactNode,
+} from 'react';
 
 import { __REACT_PREPARE__ } from './constants';
 import {
@@ -39,13 +44,13 @@ const prepared =
       // Placeholder to allow referencing this.context in lifecycle methods
       static contextTypes = contextTypes;
 
-      componentDidMount() {
+      componentDidMount(): void {
         if (componentDidMount) {
           prepare(this.props, this.context as C);
         }
       }
 
-      componentWillReceiveProps(nextProps: Readonly<P>, nextContext: C) {
+      componentWillReceiveProps(nextProps: Readonly<P>, nextContext: C): void {
         if (
           typeof componentWillReceiveProps === 'function'
             ? componentWillReceiveProps(
@@ -60,7 +65,7 @@ const prepared =
         }
       }
 
-      render() {
+      render(): ReactNode {
         return <OriginalComponent {...this.props} />;
       }
 

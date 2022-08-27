@@ -18,14 +18,60 @@
     "ecmaVersion": "latest",
     "sourceType": "module"
   },
-  "plugins": [ "react", "@typescript-eslint"],
+  "overrides": [
+    {
+      "files": ["src/tests/*.js"],
+      "extends": [
+        "eslint:recommended",
+        "plugin:react/recommended"
+      ],
+      "rules": {
+        "@typescript-eslint/no-var-requires": "off",
+        "@typescript-eslint/explicit-function-return-type": "off",
+        "@typescript-eslint/no-empty-function": "off",
+        "react/display-name": "off"
+      }
+    }
+  ],
+  "rules": {
+    "curly": ["error", "all"],
+    "camelcase": [
+      "warn",
+      {
+        "properties": "never"
+      }
+    ],
+    "no-use-before-define": [
+      "warn",
+      { "functions": false, "variables": false }
+    ],
+    "@typescript-eslint/explicit-function-return-type": [
+      "warn",
+      {
+        "allowTypedFunctionExpressions": true,
+        "allowExpressions": true
+      }
+    ],
+    "@typescript-eslint/no-explicit-any": [
+      "warn",
+      {
+        "fixToUnknown": true
+      }
+    ],
+    "@typescript-eslint/explicit-member-accessibility": [
+      "warn",
+      {
+        "accessibility": "no-public"
+      }
+    ],
+    "@typescript-eslint/no-use-before-define": [
+      "warn",
+      { "functions": false, "variables": false }
+    ]
+  },
   "settings": {
     "react": {
       "version": "detect"
     }
-  },
-  "rules": {
-    "react/display-name": "off",
-    "@typescript-eslint/no-empty-function": "off"
   }
 }
