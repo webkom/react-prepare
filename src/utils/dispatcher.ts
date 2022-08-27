@@ -2,6 +2,7 @@ import getContextValue from './getContextValue';
 import { __REACT_PREPARE__ } from '../constants';
 import React, {
   Context,
+  Dispatch,
   DispatchWithoutAction,
   Reducer,
   ReducerState,
@@ -28,7 +29,7 @@ const dispatcher: Dispatcher = {
   readContext: readContext,
   useContext: readContext,
   useEffect: noOp,
-  useState: <S>(initialValue?: S | (() => S)) => [
+  useState: <S>(initialValue?: S | (() => S)): [unknown, typeof noOp] => [
     initialValue instanceof Function ? initialValue() : initialValue,
     noOp,
   ],

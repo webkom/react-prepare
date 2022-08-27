@@ -5,8 +5,8 @@
     "target": "ESNext",
     "moduleResolution": "Node",
     "jsx": "react",
-    "noEmit": true,
     "esModuleInterop": true,
+    "outDir": "./dist",
     "types": ["mocha", "node"]
   },
   "include": ["src"]

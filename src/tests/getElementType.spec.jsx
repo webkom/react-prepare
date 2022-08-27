@@ -1,8 +1,7 @@
 /* eslint-disable react/prop-types */
 
 import { Provider } from 'react-redux';
-
-const { describe, it } = global;
+import { describe, it } from 'vitest';
 import React, { createContext, memo } from 'react';
 import assert from 'assert/strict';
 import getElementType, { ELEMENT_TYPE } from '../utils/getElementType';

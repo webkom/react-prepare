@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 
-const { describe, it } = global;
+import { describe, it } from 'vitest';
 import assert from 'assert/strict';
 import sinon from 'sinon';
 import React, {

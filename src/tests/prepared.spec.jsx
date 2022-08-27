@@ -1,4 +1,4 @@
-const { describe, it, beforeEach } = global;
+import { describe, it, beforeEach } from 'vitest';
 import sinon from 'sinon';
 import assert from 'assert/strict';
 import React, { Component, PureComponent } from 'react';
