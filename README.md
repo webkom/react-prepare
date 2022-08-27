@@ -8,8 +8,6 @@ One solution is to have a central router at the root of your application that kn
 
 This is exactly what `react-prepare` does: it allows you to declare asynchronous dependencies at the component level, and make them work fine with server-side rendering as well as client-side rendering.
 
-`react-prepare` is agnostic and can be used vanilla, but it comes with a tiny helper that makes it extremely easy to use along `redux` and `react-redux` (see examples below).
-
 #### Example with `react-redux`
 
 Let's assume you have defined an async action creator `fetchTodoItems(userName)` which performs HTTP request to your server to retrieve the todo items for a given user and stores the result in your redux state.
@@ -17,22 +15,30 @@ Let's assume you have defined an async action creator `fetchTodoItems(userName)`
 Your `TodoList` component definition would look like this:
 
 ```js
-import { dispatched } from 'react-prepare';
-import { connect } from 'react-redux';
+import { usePreparedEffect } from 'react-prepare';
+import { useDispatch, useSelector } from 'react-redux';
 import { compose } from 'redux';
 
 import { fetchTodoItems } from './actions';
 
-const enhance = compose(
-  dispatched(({ userName }, dispatch) => dispatch(fetchTodoItems(userName))),
-  connect(({ todoItems }) => ({ items: todoItems }),
-);
+const TodoList = ({ userName }) => {
+  const dispatch = useDispatch();
+  const items = useSelector(({ todoItems }) => todoItems);
 
-const TodoList = ({ items }) => <ul>{items.map((item, key) =>
-  <li key={key}>{item}</li>
-</ul>}</ul>;
+  usePreparedEffect(() => {
+    dispatch(fetchTodoItems(userName));
+  }, [userName]);
 
-export default enhance(TodoList);
+  return (
+    <ul>
+      {items.map((item, key) => (
+        <li key={key}>{item}</li>
+      ))}
+    </ul>
+  );
+};
+
+export default TodoList;
 ```
 
 And your server-side rendering code would look like this:
@@ -73,9 +79,22 @@ render(
 );
 ```
 
-**For a complete example of a fully-functional app using `react-prepare` in conjunction with `redux`, see the [react-prepare-todo](https://github.com/elierotenberg/react-prepare-todo) repository.**
-
 ### API
+
+#### `usePreparedEffect(sideEffect: async () => Promise<void>, deps, opts)`
+
+Works like `useEffect` except that when `prepare` is called, `sideEffect` is called (and awaited).
+
+Available `opts` is an optional configuration object:
+
+- `opts.awaitImmidiately` (default: `false`): on the server, `prepare` will await `sideEffect` before traversing further down the tree. When `false` the promise will be awaited before `prepare` returns.
+- `opts.runOnClient` (default: `true`): on the client, `sideEffect` is called inside a `useEffect` with the supplied dependency array.
+
+#### `withPreparedEffect(sideEffect: async (props) => Promise<void>, depsFn: (props) => [], opts)(Component)`
+
+Wraps `Component` with a component that contains a `usePreparedEffect` hook that calls `sideEffect` with the component's props. For creating the dependency array, `depsFn` is called with the component's props.
+
+Available `opts` are the same as in `usePreparedEffect`.
 
 #### `dispatched(sideEffect: async(props, dispatch), opts)(Component)`
 
