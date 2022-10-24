@@ -1,6 +1,5 @@
 import { Component, ComponentType, EffectCallback, Provider } from 'react';
 import { __REACT_PREPARE__ } from './constants';
-import { Dispatch } from 'redux';
 import PropTypes from 'prop-types';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -21,11 +20,6 @@ export interface ContextTypes {
 export type PrepareFunction<P, C = unknown> = (
   props: Readonly<P>,
   context: C,
-) => void | Promise<void>;
-
-export type PrepareUsingDispatchFunction<P> = (
-  props: Readonly<P>,
-  dispatch: Dispatch,
 ) => void | Promise<void>;
 
 interface PreparedComponentAttributes<P> {
