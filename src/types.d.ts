@@ -1,6 +1,5 @@
 import { Component, ComponentType, EffectCallback, Provider } from 'react';
 import { __REACT_PREPARE__ } from './constants';
-import PropTypes from 'prop-types';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface ContextProviderMap extends Map<Provider<any>, { value: any }> {
@@ -11,10 +10,6 @@ interface ContextProviderMap extends Map<Provider<any>, { value: any }> {
 export interface PrepareContext {
   store?: { dispatch: unknown };
   _providers?: ContextProviderMap;
-}
-
-export interface ContextTypes {
-  [key: string]: PropTypes.Validator<unknown>;
 }
 
 export type PrepareFunction<P, C = unknown> = (
@@ -31,9 +26,6 @@ interface PreparedComponentAttributes<P> {
 
 export type PreparedComponent<P> = ComponentType<P> &
   PreparedComponentAttributes<P>;
-
-export type PossiblyPreparedComponent<P> = ComponentType<P> &
-  Partial<PreparedComponentAttributes<P>>;
 
 export type ClassComponentInstance<P, S = unknown> = Omit<
   Component<P, S>,

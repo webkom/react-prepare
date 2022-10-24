@@ -3,7 +3,11 @@ import { describe, it, beforeEach } from 'vitest';
 import React from 'react';
 import assert from 'assert/strict';
 import sinon from 'sinon';
-import prepare, { prepared, usePreparedEffect } from '../index';
+import prepare, {
+  prepared,
+  usePreparedEffect,
+  withPreparedEffect,
+} from '../index';
 import { render } from '@testing-library/react';
 import { __REACT_PREPARE__ } from '../constants';
 
@@ -45,7 +49,10 @@ describe('usePreparedEffect', () => {
       return <div>{children}</div>;
     };
 
-    const PreparedComponent = prepared(prepareFunction)(Component);
+    const PreparedComponent = withPreparedEffect(
+      'parentEffect',
+      prepareFunction,
+    )(Component);
 
     const PreparedEffectComponent = () => {
       usePreparedEffect('effect', prepareFunction);
