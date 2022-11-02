@@ -110,6 +110,8 @@ An optional configuration object that can contain the following properties:
 - `opts.runSync` (default: `false`):
   - `true`: When running `prepare`, the `sideEffect`-promise will be awaited before traversing further down the tree. (because of limitations in the current implementation, effects in the same component will be run in parallel)
   - `false`: When running `prepare` the promise will be awaited in parallell with all other prepared effects after the tree has been traversed.
+- `opts.serverOnly` (default `false`):
+  - When `true` the effect will only ever be run on the server. Any provided deps-array will be ignored, and the effect will not be run if the application is not server-side rendered.
 
 ### `withPreparedEffect(identifier: string, sideEffect: async (props) => Promise<void>, depsFn: (props) => [], opts)(Component)`
 

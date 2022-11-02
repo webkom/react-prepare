@@ -181,6 +181,48 @@ describe('usePreparedEffect', () => {
     );
   });
 
+  it('should NOT run effect after rendering on client-side when serverOnly=true', () => {
+    const Component = () => {
+      usePreparedEffect('effect', prepareFunction, undefined, {
+        serverOnly: true,
+      });
+      return <div />;
+    };
+
+    render(<Component />);
+
+    assert(prepareFunction.notCalled, 'prepareFunction has never been called');
+  });
+
+  it('should NOT re-run effect on dep change when serverOnly=true', () => {
+    const Component = ({ prop }) => {
+      usePreparedEffect('effect', prepareFunction, [prop], {
+        serverOnly: true,
+      });
+      return <div />;
+    };
+
+    const { rerender } = render(<Component prop="foo" />);
+    rerender(<Component prop="bar" />);
+
+    assert(prepareFunction.notCalled, 'prepareFunction has never been called');
+  });
+
+  it('should run effect on server when serverOnly=true', () => {
+    const Component = () => {
+      usePreparedEffect('effect', prepareFunction, undefined, {
+        serverOnly: true,
+      });
+      return <div />;
+    };
+
+    prepare(<Component />);
+    assert(prepareFunction.calledOnce, 'prepareFunction was called in prepare');
+
+    render(<Component />);
+    assert(prepareFunction.calledOnce, 'prepareFunction was not called again');
+  });
+
   it('should re-run effect on client after being prepared and dep changed', async () => {
     const Component = ({ prop }) => {
       usePreparedEffect('effect', prepareFunction, [prop]);
