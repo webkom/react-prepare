@@ -4,7 +4,7 @@
   "description": "Prepare you app state for async server-side rendering and more!",
   "type": "module",
   "main": "./dist/react-prepare.umd.cjs",
-  "module": "./dist/react-prepare.mjs",
+  "module": "./dist/react-prepare.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist/**/*"
