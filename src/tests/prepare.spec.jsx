@@ -22,6 +22,7 @@ import PropTypes from 'prop-types';
 import { renderToStaticMarkup } from 'react-dom/server';
 import prepared from '../prepared';
 import prepare from '../prepare';
+import { usePreparedEffect, withPreparedEffect } from '../index';
 
 describe('prepare', () => {
   it('sets instance properties', async () => {
@@ -129,7 +130,7 @@ describe('prepare', () => {
       );
     } catch (err) {
       assert.equal(err.message, 'Err', 'Should throw the correct error');
-      assert(doAsyncSideEffect.calledOnce, 'Should be called once times');
+      assert(doAsyncSideEffect.calledOnce, 'Should be called one time');
       return;
     }
     assert.fail('It should throw');
@@ -145,6 +146,61 @@ describe('prepare', () => {
     };
 
     const App = prepared(prepareUsingProps)(({ text, children }) => (
+      <div>
+        {text} <div>{children ? children : null}</div>
+      </div>
+    ));
+    await prepare(
+      <App text="foo">
+        <App text="foo" />
+        <App text="foo" />
+      </App>,
+      { errorHandler: (e) => e },
+    );
+    assert(doAsyncSideEffect.calledThrice, 'Should be called 3 times');
+  });
+
+  it('Should throw exception using withPreparedEffect', async () => {
+    const doAsyncSideEffect = sinon.spy(async () => {
+      throw new Error('Err');
+    });
+    const prepareUsingProps = async ({ text }) => {
+      await doAsyncSideEffect(text);
+    };
+    const App = withPreparedEffect(
+      'effect',
+      prepareUsingProps,
+    )(({ text }) => <div>{text}</div>);
+    try {
+      await prepare(
+        <App text="foo">
+          <App text="foo" />
+          <App text="foo" />
+          <App text="foo" />
+          <App text="foo" />
+        </App>,
+      );
+    } catch (err) {
+      assert.equal(err.message, 'Err', 'Should throw the correct error');
+      assert(doAsyncSideEffect.calledOnce, 'Should be called one time');
+      return;
+    }
+    assert.fail('It should throw');
+  });
+
+  it("Should be possible to don't throw exception using withPreparedEffect", async () => {
+    const doAsyncSideEffect = sinon.spy(async () => {
+      throw new Error('Errooor');
+    });
+
+    const prepareUsingProps = async ({ text }) => {
+      await doAsyncSideEffect(text);
+    };
+
+    const App = withPreparedEffect(
+      'effect',
+      prepareUsingProps,
+    )(({ text, children }) => (
       <div>
         {text} <div>{children ? children : null}</div>
       </div>
@@ -694,5 +750,29 @@ describe('prepare', () => {
       html,
       '<ul><li><span class="prepared(FirstChild)">first</span></li><li><span class="prepared(SecondChild)">second</span></li></ul>',
     );
+  });
+
+  it('Awaits correct promises when preparing multiple components', async () => {
+    let numAwaited = 0;
+
+    const effect = (timeout) => async () => {
+      await new Promise((resolve) => setTimeout(resolve, timeout));
+      numAwaited++;
+    };
+
+    const SlowComponent = () => {
+      usePreparedEffect('slowEffect', effect(1000), []);
+      return <div />;
+    };
+
+    const FastComponent = () => {
+      usePreparedEffect('fastEffect', effect(0), []);
+      return <div />;
+    };
+
+    prepare(<SlowComponent />);
+    await prepare(<FastComponent />);
+
+    assert.equal(numAwaited, 1, 'Only fast effect has been awaited');
   });
 });

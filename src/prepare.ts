@@ -11,7 +11,11 @@ import { isPrepared, getPrepare, shouldAwaitOnSsr } from './prepared';
 import getElementType, { ELEMENT_TYPE } from './utils/getElementType';
 import getContextValue from './utils/getContextValue';
 import {
-  dispatcherIsRegistered,
+  createDispatcher,
+  Dispatcher,
+  popSyncHookPromises,
+  popHookPromises,
+  popPreparedHookIdentifiers,
   registerDispatcher,
   setDispatcherContext,
 } from './utils/dispatcher';
@@ -26,6 +30,7 @@ import {
   MemoElement,
   ProviderElement,
 } from './utils/reactInternalTypes';
+import { __REACT_PREPARE__ } from './constants';
 
 const updater = {
   enqueueSetState<P, S>(
@@ -108,6 +113,7 @@ async function prepareElement(
   element: ReactNode,
   errorHandler: (error: unknown) => void,
   context: PrepareContext,
+  dispatcher: Dispatcher,
 ): Promise<[ReactNode, PrepareContext, Promise<void>?]> {
   switch (getElementType(element)) {
     case ELEMENT_TYPE.NOTHING:
@@ -150,12 +156,16 @@ async function prepareElement(
         { ...memoElement, type: memoElement.type.type },
         errorHandler,
         context,
+        dispatcher,
       );
     }
     case ELEMENT_TYPE.FUNCTION_COMPONENT: {
       const functionElement = element as FunctionComponentElement<unknown>;
-      setDispatcherContext(context);
-      return [functionElement.type(functionElement.props), context];
+      setDispatcherContext(dispatcher, context);
+      registerDispatcher(dispatcher);
+      const children: ReactNode = functionElement.type(functionElement.props);
+      await Promise.all(popSyncHookPromises(dispatcher));
+      return [children, context];
     }
     case ELEMENT_TYPE.CLASS_COMPONENT: {
       return prepareCompositeElement(
@@ -171,36 +181,49 @@ async function prepareElement(
 }
 
 interface PrepareOptions {
-  errorHandler?: (error: unknown) => void;
+  errorHandler: (error: unknown) => void;
 }
 
-async function prepare(
+async function internalPrepare(
   element: ReactNode,
-  options: PrepareOptions = {},
+  options: PrepareOptions,
   context: PrepareContext = {},
+  dispatcher: Dispatcher,
 ): Promise<unknown> {
-  const {
-    errorHandler = (error) => {
-      throw error;
-    },
-  } = options;
-
-  if (!dispatcherIsRegistered()) {
-    registerDispatcher();
-  }
-
   const [children, childContext, preparePromise] = await prepareElement(
     element,
-    errorHandler,
+    options.errorHandler,
     context,
+    dispatcher,
   );
 
   // Recursively run prepare on children, and return a promise that resolves once all children are prepared.
   return Promise.all(
     React.Children.toArray(children)
-      .map((child) => prepare(child, options, childContext))
-      .concat(preparePromise || []),
+      .map((child) => internalPrepare(child, options, childContext, dispatcher))
+      .concat(preparePromise || [])
+      .concat(popHookPromises(dispatcher)),
   );
+}
+
+async function prepare(
+  element: ReactNode,
+  options: Partial<PrepareOptions> = {},
+): Promise<unknown> {
+  const fullOptions: PrepareOptions = {
+    errorHandler: (error) => {
+      throw error;
+    },
+    ...options,
+  };
+
+  const dispatcher = createDispatcher(fullOptions.errorHandler);
+
+  await internalPrepare(element, fullOptions, undefined, dispatcher);
+
+  return `window["${__REACT_PREPARE__}"] = { preparedEffects: ${JSON.stringify(
+    popPreparedHookIdentifiers(dispatcher),
+  )} };`;
 }
 
 export default prepare;

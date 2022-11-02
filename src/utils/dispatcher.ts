@@ -3,15 +3,21 @@ import { __REACT_PREPARE__ } from '../constants';
 import React, {
   Context,
   DispatchWithoutAction,
+  EffectCallback,
   Reducer,
   ReducerState,
 } from 'react';
 import { ReactDispatcher, ReactWithInternals } from './reactInternalTypes';
-import { PrepareContext } from '../types';
+import { PrepareContext, PrepareHookEffect } from '../types';
+import isThenable from './isThenable';
 
-type Dispatcher = ReactDispatcher & {
+export type Dispatcher = ReactDispatcher & {
   [__REACT_PREPARE__]: {
+    errorHandler: (error: unknown) => void;
     context: PrepareContext;
+    hookPromises: Promise<unknown>[];
+    syncHookPromises: Promise<unknown>[];
+    preparedHookIdentifiers: string[];
   };
 };
 
@@ -26,10 +32,43 @@ function readContext<T>(this: Dispatcher, context: Context<T>): T {
   return getContextValue(this[__REACT_PREPARE__].context, context);
 }
 
-const dispatcher: Dispatcher = {
+const isPrepareHookEffect = (
+  effect: EffectCallback | PrepareHookEffect,
+): effect is PrepareHookEffect => {
+  return !!(effect as Partial<PrepareHookEffect>)[__REACT_PREPARE__];
+};
+
+function useEffect(this: Dispatcher, effect: EffectCallback): void {
+  if (isPrepareHookEffect(effect)) {
+    const { hookPromises, preparedHookIdentifiers, syncHookPromises } =
+      this[__REACT_PREPARE__];
+    const { prepare, runSync } = effect[__REACT_PREPARE__];
+    const prepareResult = prepare();
+
+    preparedHookIdentifiers.push(effect[__REACT_PREPARE__].identifier);
+
+    if (!isThenable(prepareResult)) {
+      return;
+    }
+
+    const preparePromise = prepareResult.catch(
+      this[__REACT_PREPARE__].errorHandler,
+    );
+
+    if (runSync) {
+      syncHookPromises.push(preparePromise);
+    } else {
+      hookPromises.push(preparePromise);
+    }
+  }
+}
+
+export const createDispatcher = (
+  errorHandler: (error: unknown) => void,
+): Dispatcher => ({
   readContext: readContext,
   useContext: readContext,
-  useEffect: noOp,
+  useEffect: useEffect,
   useState: <S>(initialValue?: S | (() => S)): [unknown, typeof noOp] => [
     initialValue instanceof Function ? initialValue() : initialValue,
     noOp,
@@ -57,17 +96,43 @@ const dispatcher: Dispatcher = {
     getServerSnapshot ? getServerSnapshot() : getSnapshot(),
 
   [__REACT_PREPARE__]: {
+    errorHandler,
     context: {},
+    hookPromises: [],
+    syncHookPromises: [],
+    preparedHookIdentifiers: [],
   },
-};
+});
 
-export const setDispatcherContext = (context: PrepareContext): void => {
+export const setDispatcherContext = (
+  dispatcher: Dispatcher,
+  context: PrepareContext,
+): void => {
   dispatcher[__REACT_PREPARE__].context = context;
 };
 
-export const registerDispatcher = (): void => {
+export const registerDispatcher = (dispatcher: Dispatcher): void => {
   ReactInternals.ReactCurrentDispatcher.current = dispatcher;
 };
 
-export const dispatcherIsRegistered = (): boolean =>
-  ReactInternals.ReactCurrentDispatcher.current === dispatcher;
+export const popHookPromises = (dispatcher: Dispatcher): Promise<unknown>[] => {
+  const promises = dispatcher[__REACT_PREPARE__].hookPromises;
+  dispatcher[__REACT_PREPARE__].hookPromises = [];
+  return promises;
+};
+
+export const popSyncHookPromises = (
+  dispatcher: Dispatcher,
+): Promise<unknown>[] => {
+  const promises = dispatcher[__REACT_PREPARE__].syncHookPromises;
+  dispatcher[__REACT_PREPARE__].syncHookPromises = [];
+  return promises;
+};
+
+export const popPreparedHookIdentifiers = (
+  dispatcher: Dispatcher,
+): string[] => {
+  const identifiers = dispatcher[__REACT_PREPARE__].preparedHookIdentifiers;
+  dispatcher[__REACT_PREPARE__].preparedHookIdentifiers = [];
+  return identifiers;
+};
