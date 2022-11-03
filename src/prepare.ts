@@ -180,7 +180,7 @@ async function prepareElement(
   }
 }
 
-interface PrepareOptions {
+export interface PrepareOptions {
   errorHandler: (error: unknown) => void;
 }
 
