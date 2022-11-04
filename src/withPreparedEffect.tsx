@@ -5,7 +5,7 @@ import { PreparedEffectOptions } from './usePreparedEffect';
 const withPreparedEffect =
   <P,>(
     identifier: string,
-    effect: (props: P) => Promise<void>,
+    effect: (props: P) => Promise<unknown>,
     depsFn?: (props: P) => DependencyList,
     opts?: PreparedEffectOptions,
   ) =>
