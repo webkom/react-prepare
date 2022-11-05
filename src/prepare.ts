@@ -209,7 +209,7 @@ async function internalPrepare(
 async function prepare(
   element: ReactNode,
   options: Partial<PrepareOptions> = {},
-): Promise<unknown> {
+): Promise<string> {
   const fullOptions: PrepareOptions = {
     errorHandler: (error) => {
       throw error;

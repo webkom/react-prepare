@@ -56,7 +56,7 @@ export type ClassComponentInstance<P, S = unknown> = Omit<
   getChildContext?: () => PrepareContext;
 };
 
-export type PrepareHookFunction = () => Promise<void>;
+export type PrepareHookFunction = () => Promise<unknown>;
 
 export type PrepareHookEffect = EffectCallback & {
   [__REACT_PREPARE__]: {
