@@ -6,8 +6,6 @@ import React, {
   ReactNode,
 } from 'react';
 
-import isThenable from './utils/isThenable';
-import { isPrepared, getPrepare, shouldAwaitOnSsr } from './prepared';
 import getElementType, { ELEMENT_TYPE } from './utils/getElementType';
 import getContextValue from './utils/getContextValue';
 import {
@@ -88,33 +86,12 @@ function renderCompositeElementInstance<P>(
   return [instance.render(), childContext];
 }
 
-async function prepareCompositeElement<P>(
-  element: ClassicElement<P>,
-  errorHandler: (error: unknown) => void,
-  context: PrepareContext,
-): Promise<[ReactNode, PrepareContext, Promise<void>?]> {
-  const { type, props } = element;
-  let preparePromise;
-
-  if (isPrepared(type)) {
-    const prepareResult = getPrepare(type)(props, context);
-    if (isThenable(prepareResult)) {
-      preparePromise = prepareResult.catch(errorHandler);
-      if (shouldAwaitOnSsr(type)) {
-        await preparePromise;
-      }
-    }
-  }
-  const instance = createCompositeElementInstance(element, context);
-  return [...renderCompositeElementInstance(instance, context), preparePromise];
-}
-
 async function prepareElement(
   element: ReactNode,
   errorHandler: (error: unknown) => void,
   context: PrepareContext,
   dispatcher: Dispatcher,
-): Promise<[ReactNode, PrepareContext, Promise<void>?]> {
+): Promise<[ReactNode, PrepareContext]> {
   switch (getElementType(element)) {
     case ELEMENT_TYPE.NOTHING:
     case ELEMENT_TYPE.TEXT_NODE: {
@@ -168,11 +145,9 @@ async function prepareElement(
       return [children, context];
     }
     case ELEMENT_TYPE.CLASS_COMPONENT: {
-      return prepareCompositeElement(
-        element as ClassicElement<unknown>,
-        errorHandler,
-        context,
-      );
+      const classElement = element as ClassicElement<unknown>;
+      const instance = createCompositeElementInstance(classElement, context);
+      return [...renderCompositeElementInstance(instance, context)];
     }
     default: {
       throw new Error(`Unsupported element type: ${element}`);
@@ -190,20 +165,22 @@ async function internalPrepare(
   context: PrepareContext = {},
   dispatcher: Dispatcher,
 ): Promise<unknown> {
-  const [children, childContext, preparePromise] = await prepareElement(
+  const [children, childContext] = await prepareElement(
     element,
     options.errorHandler,
     context,
     dispatcher,
   );
 
-  // Recursively run prepare on children, and return a promise that resolves once all children are prepared.
-  return Promise.all(
-    React.Children.toArray(children)
-      .map((child) => internalPrepare(child, options, childContext, dispatcher))
-      .concat(preparePromise || [])
-      .concat(popHookPromises(dispatcher)),
+  // Recursively run prepare on children, awaiting any runSync=true promises and collecting any preparedEffect-promises in the dispatcher
+  await Promise.all(
+    React.Children.toArray(children).map((child) =>
+      internalPrepare(child, options, childContext, dispatcher),
+    ),
   );
+
+  // Return a promise that resolves once all collected runSync=false promises are prepared
+  return Promise.all(popHookPromises(dispatcher));
 }
 
 async function prepare(

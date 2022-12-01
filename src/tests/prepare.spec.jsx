@@ -20,7 +20,6 @@ import React, {
 } from 'react';
 import PropTypes from 'prop-types';
 import { renderToStaticMarkup } from 'react-dom/server';
-import prepared from '../prepared';
 import prepare from '../prepare';
 import { usePreparedEffect, withPreparedEffect } from '../index';
 
@@ -118,7 +117,10 @@ describe('prepare', () => {
     const prepareUsingProps = async ({ text }) => {
       await doAsyncSideEffect(text);
     };
-    const App = prepared(prepareUsingProps)(({ text }) => <div>{text}</div>);
+    const App = withPreparedEffect(
+      'appEffect',
+      prepareUsingProps,
+    )(({ text }) => <div>{text}</div>);
     try {
       await prepare(
         <App text="foo">
@@ -145,7 +147,10 @@ describe('prepare', () => {
       await doAsyncSideEffect(text);
     };
 
-    const App = prepared(prepareUsingProps)(({ text, children }) => (
+    const App = withPreparedEffect(
+      'appEffect',
+      prepareUsingProps,
+    )(({ text, children }) => (
       <div>
         {text} <div>{children ? children : null}</div>
       </div>
@@ -226,14 +231,17 @@ describe('prepare', () => {
     const innerPrepare = async () =>
       new Promise((resolve) => innerFunc() && resolve());
 
-    const Outer = prepared(outerPrepare, {
-      awaitOnSsr: false,
+    const Outer = withPreparedEffect('outerEffect', outerPrepare, () => [], {
+      runSync: false,
     })(({ text, children }) => (
       <div>
         {text} <div>{children ? children : null}</div>
       </div>
     ));
-    const Inner = prepared(innerPrepare)(({ text, children }) => (
+    const Inner = withPreparedEffect(
+      'innerEffect',
+      innerPrepare,
+    )(({ text, children }) => (
       <div>
         {text} <div>{children ? children : null}</div>
       </div>
@@ -263,7 +271,10 @@ describe('prepare', () => {
     };
     const options = { errorHandler: (e) => e };
 
-    const App = prepared(prepareUsingProps)(({ text, children }) => (
+    const App = withPreparedEffect(
+      'appEffect',
+      prepareUsingProps,
+    )(({ text, children }) => (
       <div>
         {text} <div>{children ? children : null}</div>
       </div>
@@ -343,7 +354,10 @@ describe('prepare', () => {
     const prepareUsingProps = sinon.spy(async ({ text }) => {
       await doAsyncSideEffect(text);
     });
-    const App = prepared(prepareUsingProps)(({ text }) => <div>{text}</div>);
+    const App = withPreparedEffect(
+      'appEffect',
+      prepareUsingProps,
+    )(({ text }) => <div>{text}</div>);
     await prepare(
       <React.Fragment>
         <App text="foo" />
@@ -369,9 +383,10 @@ describe('prepare', () => {
     const prepareUsingProps = sinon.spy(async ({ text }) => {
       await doAsyncSideEffect(text);
     });
-    const ComponentTester = prepared(prepareUsingProps)(({ text }) => (
-      <div>{text}</div>
-    ));
+    const ComponentTester = withPreparedEffect(
+      'componentEffect',
+      prepareUsingProps,
+    )(({ text }) => <div>{text}</div>);
     const Component = componentCreator(ComponentTester);
     await prepare(<Component />);
 
@@ -644,7 +659,10 @@ describe('prepare', () => {
     const prepareUsingProps = sinon.spy(async ({ text }) => {
       await doAsyncSideEffect(text);
     });
-    const App = prepared(prepareUsingProps)(({ text }) => <div>{text}</div>);
+    const App = withPreparedEffect(
+      'appEffect',
+      prepareUsingProps,
+    )(({ text }) => <div>{text}</div>);
     await prepare(<App text="foo" />);
     assert(
       prepareUsingProps.calledOnce,
@@ -652,7 +670,7 @@ describe('prepare', () => {
     );
     assert.deepEqual(
       prepareUsingProps.getCall(0).args,
-      [{ text: 'foo' }, {}],
+      [{ text: 'foo' }],
       'prepareUsingProps has been called with correct arguments',
     );
     assert(
@@ -672,24 +690,26 @@ describe('prepare', () => {
     let classNameOfFirstChild = 'FirstChild';
     let classNameOfSecondChild = 'SecondChild';
     const doAsyncSideEffectForFirstChild = sinon.spy(async () => {
-      classNameOfFirstChild = 'prepared(FirstChild)';
+      classNameOfFirstChild = 'withPreparedEffect(FirstChild)';
     });
     const prepareUsingPropsForFirstChild = sinon.spy(async ({ text }) => {
       await doAsyncSideEffectForFirstChild(text);
     });
     const doAsyncSideEffectForSecondChild = sinon.spy(async () => {
-      classNameOfSecondChild = 'prepared(SecondChild)';
+      classNameOfSecondChild = 'withPreparedEffect(SecondChild)';
     });
     const prepareUsingPropsForSecondChild = sinon.spy(async ({ text }) => {
       await doAsyncSideEffectForSecondChild(text);
     });
 
-    const FirstChild = prepared(prepareUsingPropsForFirstChild)(({ text }) => (
-      <span className={classNameOfFirstChild}>{text}</span>
-    ));
-    const SecondChild = prepared(prepareUsingPropsForSecondChild)(
-      ({ text }) => <span className={classNameOfSecondChild}>{text}</span>,
-    );
+    const FirstChild = withPreparedEffect(
+      'firstEffect',
+      prepareUsingPropsForFirstChild,
+    )(({ text }) => <span className={classNameOfFirstChild}>{text}</span>);
+    const SecondChild = withPreparedEffect(
+      'secondEffect',
+      prepareUsingPropsForSecondChild,
+    )(({ text }) => <span className={classNameOfSecondChild}>{text}</span>);
 
     const App = ({ texts }) => (
       <ul>
@@ -713,7 +733,7 @@ describe('prepare', () => {
     );
     assert.deepEqual(
       prepareUsingPropsForFirstChild.getCall(0).args,
-      [{ text: 'first' }, {}],
+      [{ text: 'first' }],
       'prepareUsingPropsForFirstChild has been called with correct arguments',
     );
     assert(
@@ -732,7 +752,7 @@ describe('prepare', () => {
     );
     assert.deepEqual(
       prepareUsingPropsForSecondChild.getCall(0).args,
-      [{ text: 'second' }, {}],
+      [{ text: 'second' }],
       'prepareUsingPropsForSecondChild has been called with correct arguments',
     );
     assert(
@@ -748,7 +768,7 @@ describe('prepare', () => {
     const html = renderToStaticMarkup(<App texts={['first', 'second']} />);
     assert.equal(
       html,
-      '<ul><li><span class="prepared(FirstChild)">first</span></li><li><span class="prepared(SecondChild)">second</span></li></ul>',
+      '<ul><li><span class="withPreparedEffect(FirstChild)">first</span></li><li><span class="withPreparedEffect(SecondChild)">second</span></li></ul>',
     );
   });
 

@@ -1,11 +1,9 @@
 /* eslint-disable react/prop-types */
 
-import { Provider } from 'react-redux';
 import { describe, it } from 'vitest';
 import React, { createContext, memo } from 'react';
 import assert from 'assert/strict';
 import getElementType, { ELEMENT_TYPE } from '../utils/getElementType';
-import { createStore } from 'redux';
 
 describe('isComponentType', () => {
   it('correctly identified non-nodes', () => {
@@ -189,17 +187,6 @@ describe('isComponentType', () => {
         <PureComponent>
           <p>test</p>
         </PureComponent>,
-      ),
-      ELEMENT_TYPE.CLASS_COMPONENT,
-    );
-  });
-
-  it('should match redux Provider as class component', () => {
-    assert.equal(
-      getElementType(
-        <Provider store={createStore(() => {})}>
-          <></>
-        </Provider>,
       ),
       ELEMENT_TYPE.CLASS_COMPONENT,
     );

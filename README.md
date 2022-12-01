@@ -135,45 +135,10 @@ If no `depsFn` is provided, an empty dependency-array will be used, and the side
 
 Available `opts` are the same as in `usePreparedEffect`.
 
-### `dispatched(sideEffect: async(props, dispatch), opts)(Component)`
-
-Helper to use `prepared` more simply if your side effects consists mostly of dispatching redux actions.
-
-In the body of the `sideEffect` function, you can use the `dispatch` function to dispatch redux actions, typically
-requesting data from an asynchronous source (API server, etc.).
-For example, let's assume you have defined an async action creator `fetchTodoItems(userName)` that fetches the todo-items from a REST API,
-and that you are defining a component with a `userName` prop. To decorate your component, your code would look like:
-
-```js
-class TodoItems extends React.PureComponent { ... }
-
-const DispatchedTodoItems = dispatched(
-  ({ userName }, dispatch) => dispatch(fetchTodoItems(userName))
-)(TodoItems);
-```
-
-The decorated component will have the following behavior:
-
-- when server-side rendered using `prepare`, `sideEffect` will be run and awaited before the component is rendered; if `sideEffect` throws, `prepare` will also throw.
-- when client-side rendered, `sideEffect` will be called on `componentDidMount` and `componentWillReceiveProps`.
-
-`opts` is an optional configuration object passed directly to the underlying `prepared` decorator (see below).
-
-### `prepared(sideEffect: async(props, context), opts)(Component)`
-
-Decorates `Component` so that when `prepare` is called, `sideEffect` is called (and awaited) before continuing the rendering traversal.
-
-Available `opts` is an optional configuration object:
-
-- `opts.pure` (default: `true`): the decorated component extends `PureComponent` instead of `Component`.
-- `opts.componentDidMount` (default: `true`): on the client, `sideEffect` is called when the component is mounted.
-- `opts.componentWillReceiveProps` (default: `true`): on the client, `sideEffect` is called again whenever the component receive props.
-- `opts.awaitOnSsr` (default: `true`): on the server, should `prepare` await `sideEffect` before traversing further down the tree. When `false` the promise will be awaited before `prepare` returns.
-
 ### `async prepare(Element, ?opts) => string`
 
-Recursively traverses the element rendering tree, collecting all promises from `usePreparedEffect`, `withPreparedEffect`, `prepared` (or `dispatched`) and awaits them as defined (either after traversing the tree, or before traversing further with `awaitOnSsr` or `runSync`).
-It should be used (and `await`-ed) _before_ calling `renderToString` on the server. If any of the side effects throws, and an `errorHandler` has not been provided, `prepare` will also throw.
+Recursively traverses the element rendering tree, collecting all promises from `usePreparedEffect` and `withPreparedEffect` and awaits them as defined (either after traversing the tree, or before traversing further with `runSync=true`).
+It should be used (and `await`-ed) _before_ calling `renderToString` on the server. If any of the side effects throws, `prepare` will also throw.
 
 The return value is a string containing js-code to set a key on the `window` object, that will be used in the client-side rendering to avoid re-running any side effects.
 
@@ -184,6 +149,5 @@ Available `opts` is an optional configuration object:
 
 ### Notes
 
-`react-prepare` tries hard to avoid object keys conflicts, but since React isn't very friendly with `Symbol`, it uses a special key for its internal use.
-The single polluted key in the components key namespace is `@__REACT_PREPARE__@`, which shouldn't be an issue.
-This key is also used in the `window` object to store what side-effects are prepared.
+`react-prepare` tries hard to avoid object keys conflicts, but it does require setting a variable on the `window` object to store what side-effects are prepared.
+The single polluted key on the `window` object is `@__REACT_PREPARE__@`, which shouldn't be an issue.
