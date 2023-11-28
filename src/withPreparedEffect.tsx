@@ -3,14 +3,14 @@ import { usePreparedEffect } from './index';
 import { PreparedEffectOptions } from './usePreparedEffect';
 
 const withPreparedEffect =
-  <P,>(
+  <P extends object>(
     identifier: string,
     effect: (props: P) => Promise<unknown>,
     depsFn?: (props: P) => DependencyList,
     opts?: PreparedEffectOptions,
   ) =>
-  (Component: ComponentType<P>) => {
-    const WrappedComponent = (props: P): ReactNode => {
+  <CP extends P>(Component: ComponentType<CP>) => {
+    const WrappedComponent = (props: CP): ReactNode => {
       usePreparedEffect(
         identifier,
         () => effect(props),
