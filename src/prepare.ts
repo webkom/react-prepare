@@ -86,6 +86,18 @@ function renderCompositeElementInstance<P>(
   return [instance.render(), childContext];
 }
 
+async function runFunctionComponent(
+  hookFunction: () => ReactNode,
+  dispatcher: Dispatcher,
+  context: PrepareContext,
+): Promise<ReactNode> {
+  setDispatcherContext(dispatcher, context);
+  registerDispatcher(dispatcher);
+  const children: ReactNode = hookFunction();
+  await Promise.all(popSyncHookPromises(dispatcher));
+  return children;
+}
+
 async function prepareElement(
   element: ReactNode,
   errorHandler: (error: unknown) => void,
@@ -119,13 +131,16 @@ async function prepareElement(
     }
     case ELEMENT_TYPE.FORWARD_REF: {
       const forwardRefElement = element as ForwardRefElement;
-      return [
-        forwardRefElement.type.render(
-          forwardRefElement.props,
-          forwardRefElement.ref,
-        ),
+      const children = await runFunctionComponent(
+        () =>
+          forwardRefElement.type.render(
+            forwardRefElement.props,
+            forwardRefElement.ref,
+          ),
+        dispatcher,
         context,
-      ];
+      );
+      return [children, context];
     }
     case ELEMENT_TYPE.MEMO: {
       const memoElement = element as MemoElement;
@@ -138,10 +153,11 @@ async function prepareElement(
     }
     case ELEMENT_TYPE.FUNCTION_COMPONENT: {
       const functionElement = element as FunctionComponentElement<unknown>;
-      setDispatcherContext(dispatcher, context);
-      registerDispatcher(dispatcher);
-      const children: ReactNode = functionElement.type(functionElement.props);
-      await Promise.all(popSyncHookPromises(dispatcher));
+      const children = await runFunctionComponent(
+        () => functionElement.type(functionElement.props),
+        dispatcher,
+        context,
+      );
       return [children, context];
     }
     case ELEMENT_TYPE.CLASS_COMPONENT: {

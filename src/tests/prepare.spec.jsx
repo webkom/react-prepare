@@ -1,9 +1,10 @@
 /* eslint-disable react/prop-types */
 
-import { describe, it } from 'vitest';
+import { describe, it, beforeAll, beforeEach, expect } from 'vitest';
 import assert from 'assert/strict';
 import sinon from 'sinon';
 import React, {
+  forwardRef,
   memo,
   useCallback,
   useContext,
@@ -16,14 +17,22 @@ import React, {
   useRef,
   useState,
   useSyncExternalStore,
-  useTransition,
-} from 'react';
+  useTransition
+} from "react";
 import PropTypes from 'prop-types';
 import { renderToStaticMarkup } from 'react-dom/server';
 import prepare from '../prepare';
 import { usePreparedEffect, withPreparedEffect } from '../index';
 
 describe('prepare', () => {
+  let originalDispatcher;
+  beforeAll(() => {
+    originalDispatcher = React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentDispatcher.current;
+  });
+  beforeEach(() => {
+    React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentDispatcher.current = originalDispatcher;
+  });
+
   it('sets instance properties', async () => {
     class MessageBox extends React.Component {
       static propTypes = {
@@ -586,6 +595,33 @@ describe('prepare', () => {
       '<p>My:initial</p><p>My:testing<p>My:testing</p></p><p>Another:</p><p>My:myOther</p><p>Another:another</p>',
       'renders with correct html',
     );
+  });
+
+  it('Should support forwardRef() component with hooks', async () => {
+    // eslint-disable-next-line react/display-name
+    const ForwardRefComponent = forwardRef((props, ref) => {
+      const [state] = useState('initial');
+      return (
+        <div ref={ref}>
+          {props.text} {state}
+        </div>
+      );
+    });
+    await prepare(<ForwardRefComponent text="foo" />);
+  });
+
+  it('Should support forwardRef() component with useContext hook', async () => {
+    let readContext;
+    const MyContext = React.createContext('initial');
+    // eslint-disable-next-line react/display-name
+    const ForwardRefComponent = forwardRef((props, ref) => {
+      readContext = useContext(MyContext);
+      return (
+        <div ref={ref} />
+      );
+    });
+    await prepare(<MyContext.Provider value="context"><ForwardRefComponent text="foo" /></MyContext.Provider>);
+    expect(readContext).toBe('context');
   });
 
   it('Should support React.memo()', async () => {
