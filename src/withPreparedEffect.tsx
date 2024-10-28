@@ -12,9 +12,9 @@ const withPreparedEffect =
   <CP extends P>(Component: ComponentType<CP>) => {
     const WrappedComponent = (props: CP): ReactNode => {
       usePreparedEffect(
-        identifier,
         () => effect(props),
         depsFn ? depsFn(props) : [],
+        identifier,
         opts,
       );
       return <Component {...props} />;

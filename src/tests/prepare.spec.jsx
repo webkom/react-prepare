@@ -17,8 +17,8 @@ import React, {
   useRef,
   useState,
   useSyncExternalStore,
-  useTransition
-} from "react";
+  useTransition,
+} from 'react';
 import PropTypes from 'prop-types';
 import { renderToStaticMarkup } from 'react-dom/server';
 import prepare from '../prepare';
@@ -27,10 +27,13 @@ import { usePreparedEffect, withPreparedEffect } from '../index';
 describe('prepare', () => {
   let originalDispatcher;
   beforeAll(() => {
-    originalDispatcher = React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentDispatcher.current;
+    originalDispatcher =
+      React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED
+        .ReactCurrentDispatcher.current;
   });
   beforeEach(() => {
-    React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentDispatcher.current = originalDispatcher;
+    React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentDispatcher.current =
+      originalDispatcher;
   });
 
   it('sets instance properties', async () => {
@@ -616,11 +619,13 @@ describe('prepare', () => {
     // eslint-disable-next-line react/display-name
     const ForwardRefComponent = forwardRef((props, ref) => {
       readContext = useContext(MyContext);
-      return (
-        <div ref={ref} />
-      );
+      return <div ref={ref} />;
     });
-    await prepare(<MyContext.Provider value="context"><ForwardRefComponent text="foo" /></MyContext.Provider>);
+    await prepare(
+      <MyContext.Provider value="context">
+        <ForwardRefComponent text="foo" />
+      </MyContext.Provider>,
+    );
     expect(readContext).toBe('context');
   });
 
@@ -817,12 +822,14 @@ describe('prepare', () => {
     };
 
     const SlowComponent = () => {
-      usePreparedEffect('slowEffect', effect(1000), []);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      usePreparedEffect(effect(1000), [], 'slowEffect');
       return <div />;
     };
 
     const FastComponent = () => {
-      usePreparedEffect('fastEffect', effect(0), []);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      usePreparedEffect(effect(0), [], 'fastEffect');
       return <div />;
     };
 

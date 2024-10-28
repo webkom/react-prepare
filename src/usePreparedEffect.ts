@@ -8,9 +8,9 @@ export interface PreparedEffectOptions {
 }
 
 const usePreparedEffect = (
-  identifier: string,
   prepareFunction: PrepareHookFunction,
-  deps?: DependencyList,
+  deps: DependencyList = [],
+  identifier: string,
   { runSync = false, serverOnly = false }: PreparedEffectOptions = {},
 ): void => {
   // keep track of whether it is the initial effect-run or not, as only the first run is affected by server-preparing

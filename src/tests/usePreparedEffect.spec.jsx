@@ -3,11 +3,7 @@ import { describe, it, beforeEach } from 'vitest';
 import React from 'react';
 import assert from 'assert/strict';
 import sinon from 'sinon';
-import prepare, {
-  prepared,
-  usePreparedEffect,
-  withPreparedEffect,
-} from '../index';
+import prepare, { usePreparedEffect, withPreparedEffect } from '../index';
 import { render } from '@testing-library/react';
 import { __REACT_PREPARE__ } from '../constants';
 
@@ -27,7 +23,7 @@ describe('usePreparedEffect', () => {
 
   it('should run prepare function when prepared', async () => {
     const Component = () => {
-      usePreparedEffect('effect', prepareFunction);
+      usePreparedEffect(prepareFunction, [], 'effect');
 
       return <div></div>;
     };
@@ -55,7 +51,7 @@ describe('usePreparedEffect', () => {
     )(Component);
 
     const PreparedEffectComponent = () => {
-      usePreparedEffect('effect', prepareFunction);
+      usePreparedEffect(prepareFunction, [], 'effect');
 
       return <div></div>;
     };
@@ -88,12 +84,16 @@ describe('usePreparedEffect', () => {
     const childEffect = sinon.spy(() => {});
 
     const Component = ({ children }) => {
-      usePreparedEffect('effect', parentEffect, [], { runSync: true });
+      usePreparedEffect(parentEffect, [], 'effect', { runSync: true });
       return <div>{children}</div>;
     };
 
     const ChildComponent = () => {
-      usePreparedEffect('childEffect', () => childEffect(parentEffectAwaited));
+      usePreparedEffect(
+        () => childEffect(parentEffectAwaited),
+        [],
+        'childEffect',
+      );
       return <div />;
     };
 
@@ -118,23 +118,31 @@ describe('usePreparedEffect', () => {
     const childEffect = sinon.spy(() => {});
 
     const Component = ({ children }) => {
-      usePreparedEffect('effect1', parentEffect(0), [], {
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      usePreparedEffect(parentEffect(0), [], 'effect1', {
         runSync: true,
       });
-      usePreparedEffect('effect2', parentEffect(10), [], {
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      usePreparedEffect(parentEffect(10), [], 'effect2', {
         runSync: true,
       });
-      usePreparedEffect('effect3', parentEffect(0), [], {
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      usePreparedEffect(parentEffect(0), [], 'effect3', {
         runSync: true,
       });
       return <div>{children}</div>;
     };
 
     const ChildComponent = () => {
-      usePreparedEffect('childImmediate', parentEffect(0), [], {
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      usePreparedEffect(parentEffect(0), [], 'childImmediate', {
         runSync: true,
       });
-      usePreparedEffect('childEffect', () => childEffect(parentEffectsAwaited));
+      usePreparedEffect(
+        () => childEffect(parentEffectsAwaited),
+        [],
+        'childEffect',
+      );
       return <div />;
     };
 
@@ -153,7 +161,7 @@ describe('usePreparedEffect', () => {
 
   it('should run effect after rendering on client-side when NOT prepared', () => {
     const Component = () => {
-      usePreparedEffect('effect', prepareFunction);
+      usePreparedEffect(prepareFunction, [], 'effect');
       return <div />;
     };
 
@@ -167,7 +175,7 @@ describe('usePreparedEffect', () => {
 
   it('should NOT re-run effect on client after being prepared', async () => {
     const Component = () => {
-      usePreparedEffect('effect', prepareFunction);
+      usePreparedEffect(prepareFunction, [], 'effect');
       return <div />;
     };
 
@@ -190,7 +198,7 @@ describe('usePreparedEffect', () => {
 
   it('should NOT run effect after rendering on client-side when serverOnly=true', () => {
     const Component = () => {
-      usePreparedEffect('effect', prepareFunction, undefined, {
+      usePreparedEffect(prepareFunction, undefined, 'effect', {
         serverOnly: true,
       });
       return <div />;
@@ -203,7 +211,7 @@ describe('usePreparedEffect', () => {
 
   it('should NOT re-run effect on dep change when serverOnly=true', () => {
     const Component = ({ prop }) => {
-      usePreparedEffect('effect', prepareFunction, [prop], {
+      usePreparedEffect(prepareFunction, [prop], 'effect', {
         serverOnly: true,
       });
       return <div />;
@@ -217,7 +225,7 @@ describe('usePreparedEffect', () => {
 
   it('should run effect on server when serverOnly=true', () => {
     const Component = () => {
-      usePreparedEffect('effect', prepareFunction, undefined, {
+      usePreparedEffect(prepareFunction, undefined, 'effect', {
         serverOnly: true,
       });
       return <div />;
@@ -232,7 +240,7 @@ describe('usePreparedEffect', () => {
 
   it('should re-run effect on client after being prepared and dep changed', async () => {
     const Component = ({ prop }) => {
-      usePreparedEffect('effect', prepareFunction, [prop]);
+      usePreparedEffect(prepareFunction, [prop], 'effect');
       return <div />;
     };
 
@@ -262,7 +270,7 @@ describe('usePreparedEffect', () => {
 
   it('should NOT re-run effect on client after being prepared if no dep changed', async () => {
     const Component = ({ prop }) => {
-      usePreparedEffect('effect', prepareFunction, [prop]);
+      usePreparedEffect(prepareFunction, [prop], 'effect');
       return <div />;
     };
 
@@ -292,7 +300,7 @@ describe('usePreparedEffect', () => {
 
   it('should re-run effect after being prepared if component is unmounted and re-mounted', async () => {
     const Component = ({ prop }) => {
-      usePreparedEffect('effect', prepareFunction, [prop]);
+      usePreparedEffect(prepareFunction, [prop], 'effect');
       return <div />;
     };
 
@@ -326,16 +334,14 @@ describe('usePreparedEffect', () => {
 
   it('should run effect on client after other effect is prepared', async () => {
     const Component = () => {
-      usePreparedEffect('effect', prepareFunction);
+      usePreparedEffect(prepareFunction, [], 'effect');
       return <div />;
     };
 
-    const otherEffectFunction = sinon.spy(async () => {
-      return;
-    });
+    const otherEffectFunction = sinon.spy(async () => {});
 
     const OtherComponent = () => {
-      usePreparedEffect('otherEffect', otherEffectFunction);
+      usePreparedEffect(otherEffectFunction, [], 'otherEffect');
       return <div />;
     };
 
@@ -361,7 +367,7 @@ describe('usePreparedEffect', () => {
 
   it('should re-run effect when re-rendering with dependency-array undefined', () => {
     const Component = () => {
-      usePreparedEffect('effect', prepareFunction);
+      usePreparedEffect(prepareFunction, [], 'effect');
       return <div />;
     };
 
@@ -377,7 +383,7 @@ describe('usePreparedEffect', () => {
 
   it('should re-run effect when a dependency has changed', () => {
     const Component = ({ dep }) => {
-      usePreparedEffect('effect', prepareFunction, [dep]);
+      usePreparedEffect(prepareFunction, [dep], 'effect');
       return <div />;
     };
 
@@ -398,7 +404,7 @@ describe('usePreparedEffect', () => {
 
   it('should not re-run effect when a dependency stays the same', () => {
     const Component = ({ dep }) => {
-      usePreparedEffect('effect', prepareFunction, [dep]);
+      usePreparedEffect(prepareFunction, [dep], 'effect');
       return <div />;
     };
 

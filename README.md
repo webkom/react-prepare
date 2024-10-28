@@ -151,3 +151,22 @@ Available `opts` is an optional configuration object:
 
 `react-prepare` tries hard to avoid object keys conflicts, but it does require setting a variable on the `window` object to store what side-effects are prepared.
 The single polluted key on the `window` object is `@__REACT_PREPARE__@`, which shouldn't be an issue.
+
+## Linting
+
+As `usePreparedEffect` uses `useEffect` under the hood, linting the dependency array is important. We recommend using `eslint-plugin-react-hooks` with the `exhaustive-deps` rule enabled.
+To make this work, you need to add the following to your `.eslintrc`:
+
+```json
+{
+  "plugins": ["react-hooks"],
+  "rules": {
+    "react-hooks/exhaustive-deps": [
+      "warn",
+      {
+        "additionalHooks": "(usePreparedEffect)"
+      }
+    ]
+  }
+}
+```
