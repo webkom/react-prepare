@@ -67,13 +67,9 @@ export type ProviderElement = ReactElement<
   ProviderWithInternals
 >;
 
-interface ConsumerWithInternals<T = unknown> extends Consumer<T> {
-  _context: Context<T>;
-}
-
 export type ConsumerElement = ReactElement<
   ConsumerProps<unknown>,
-  ConsumerWithInternals
+  Context<unknown> & Consumer<unknown>
 >;
 
 // I couldn't find any exported types in react that matched.
