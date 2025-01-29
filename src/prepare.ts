@@ -124,7 +124,7 @@ async function prepareElement(
     }
     case ELEMENT_TYPE.CONTEXT_CONSUMER: {
       const consumerElement = element as ConsumerElement;
-      const value = getContextValue(context, consumerElement.type._context);
+      const value = getContextValue(context, consumerElement.type);
 
       const consumerFunc = consumerElement.props.children;
       return [consumerFunc(value), context];
