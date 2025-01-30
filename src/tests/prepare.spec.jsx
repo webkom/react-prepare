@@ -5,7 +5,9 @@ import assert from 'assert/strict';
 import sinon from 'sinon';
 import React, {
   forwardRef,
+  lazy,
   memo,
+  Suspense,
   useCallback,
   useContext,
   useDeferredValue,
@@ -17,8 +19,8 @@ import React, {
   useRef,
   useState,
   useSyncExternalStore,
-  useTransition
-} from "react";
+  useTransition,
+} from 'react';
 import PropTypes from 'prop-types';
 import { renderToStaticMarkup } from 'react-dom/server';
 import prepare from '../prepare';
@@ -27,10 +29,13 @@ import { usePreparedEffect, withPreparedEffect } from '../index';
 describe('prepare', () => {
   let originalDispatcher;
   beforeAll(() => {
-    originalDispatcher = React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentDispatcher.current;
+    originalDispatcher =
+      React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED
+        .ReactCurrentDispatcher.current;
   });
   beforeEach(() => {
-    React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentDispatcher.current = originalDispatcher;
+    React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentDispatcher.current =
+      originalDispatcher;
   });
 
   it('sets instance properties', async () => {
@@ -616,11 +621,13 @@ describe('prepare', () => {
     // eslint-disable-next-line react/display-name
     const ForwardRefComponent = forwardRef((props, ref) => {
       readContext = useContext(MyContext);
-      return (
-        <div ref={ref} />
-      );
+      return <div ref={ref} />;
     });
-    await prepare(<MyContext.Provider value="context"><ForwardRefComponent text="foo" /></MyContext.Provider>);
+    await prepare(
+      <MyContext.Provider value="context">
+        <ForwardRefComponent text="foo" />
+      </MyContext.Provider>,
+    );
     expect(readContext).toBe('context');
   });
 
@@ -687,6 +694,41 @@ describe('prepare', () => {
       html,
       'initial testing initial another',
       'renders with correct html',
+    );
+  });
+
+  it('Should support lazy and Suspense', async () => {
+    const LazyComponent = lazy(() =>
+      Promise.resolve({ default: () => <div>Lazy</div> }),
+    );
+    const SuspenseComponent = () => (
+      <Suspense fallback={<div>Loading...</div>}>
+        <LazyComponent />
+      </Suspense>
+    );
+    await prepare(<SuspenseComponent />);
+  });
+
+  it('Should execute prepared effects inside lazy loaded components with Suspense', async () => {
+    const doAsyncSideEffect = sinon.spy(async () => {});
+    const EffectComponent = withPreparedEffect(
+      'effect',
+      doAsyncSideEffect,
+    )(() => <div>Effect</div>);
+
+    const LazyComponent = lazy(() =>
+      Promise.resolve({ default: EffectComponent }),
+    );
+    const SuspenseComponent = () => (
+      <Suspense fallback={<div>Loading...</div>}>
+        <LazyComponent prop="test" />
+      </Suspense>
+    );
+    await prepare(<SuspenseComponent />);
+    assert(doAsyncSideEffect.calledOnce, 'Should execute prepared effect');
+    assert(
+      doAsyncSideEffect.calledWith({ prop: 'test' }),
+      'Should execute with provided props',
     );
   });
 
