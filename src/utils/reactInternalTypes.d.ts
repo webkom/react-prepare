@@ -6,6 +6,7 @@ import React, {
   ExoticComponent,
   ForwardedRef,
   ForwardRefRenderFunction,
+  LazyExoticComponent,
   MemoExoticComponent,
   Provider,
   ProviderProps,
@@ -86,4 +87,17 @@ export type ForwardRefElement<P = unknown> = ReactElement<
 export type MemoElement<P = unknown> = ReactElement<
   P,
   MemoExoticComponent<ComponentType<P>>
+>;
+
+type LazyPayload<P> = {
+  _status: number;
+  _result: { default: ComponentType<P> };
+};
+
+export type LazyElement<P = unknown> = ReactElement<
+  P,
+  LazyExoticComponent<ComponentType<P>> & {
+    _payload: LazyPayload<P>;
+    _init: (payload: LazyPayload<P>) => unknown;
+  }
 >;

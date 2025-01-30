@@ -11,6 +11,7 @@ export enum ELEMENT_TYPE {
   MEMO = 7,
   FUNCTION_COMPONENT = 8,
   CLASS_COMPONENT = 9,
+  LAZY = 10,
 }
 
 function isTextNode(element: ReactNode): element is string | number {
@@ -41,6 +42,8 @@ export default function getElementType(element: ReactNode): ELEMENT_TYPE {
       return ELEMENT_TYPE.FORWARD_REF;
     } else if (type.$$typeof.toString() === 'Symbol(react.memo)') {
       return ELEMENT_TYPE.MEMO;
+    } else if (type.$$typeof.toString() === 'Symbol(react.lazy)') {
+      return ELEMENT_TYPE.LAZY;
     }
   } else if (typeof element.type === 'function') {
     if (!element.type.prototype || !('render' in element.type.prototype)) {

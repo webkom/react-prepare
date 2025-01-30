@@ -25,6 +25,7 @@ import {
 import {
   ConsumerElement,
   ForwardRefElement,
+  LazyElement,
   MemoElement,
   ProviderElement,
 } from './utils/reactInternalTypes';
@@ -165,8 +166,28 @@ async function prepareElement(
       const instance = createCompositeElementInstance(classElement, context);
       return [...renderCompositeElementInstance(instance, context)];
     }
+    case ELEMENT_TYPE.LAZY: {
+      const lazyElement = element as LazyElement;
+      const payload = lazyElement.type._payload;
+      const init = lazyElement.type._init;
+      while (payload._status <= 0) {
+        try {
+          await init(payload);
+        } catch (error) {
+          await error;
+        }
+      }
+      const { default: loadedElement } = payload._result;
+
+      return prepareElement(
+        { ...lazyElement, type: loadedElement },
+        errorHandler,
+        context,
+        dispatcher,
+      );
+    }
     default: {
-      throw new Error(`Unsupported element type: ${element}`);
+      throw new Error(`Unsupported element type: ${getElementType(element)}`);
     }
   }
 }
