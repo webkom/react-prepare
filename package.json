@@ -1,10 +1,14 @@
 {
   "name": "@webkom/react-prepare",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Prepare you app state for async server-side rendering and more!",
   "type": "module",
-  "main": "./dist/react-prepare.umd.cjs",
-  "module": "./dist/react-prepare.js",
+  "exports": {
+    "import": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/react-prepare.js"
+    }
+  },
   "types": "dist/index.d.ts",
   "files": [
     "dist/**/*"
