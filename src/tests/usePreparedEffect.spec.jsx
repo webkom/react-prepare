@@ -1,4 +1,3 @@
-/* eslint-disable react/prop-types */
 import { describe, it, beforeEach } from 'vitest';
 import React from 'react';
 import assert from 'assert/strict';

@@ -1,4 +1,4 @@
-/* eslint-disable react/prop-types */
+/* eslint-disable react/display-name */
 
 import { describe, it, beforeAll, beforeEach, expect } from 'vitest';
 import assert from 'assert/strict';
@@ -21,7 +21,6 @@ import React, {
   useSyncExternalStore,
   useTransition,
 } from 'react';
-import PropTypes from 'prop-types';
 import { renderToStaticMarkup } from 'react-dom/server';
 import prepare from '../prepare';
 import { usePreparedEffect, withPreparedEffect } from '../index';
@@ -30,20 +29,15 @@ describe('prepare', () => {
   let originalDispatcher;
   beforeAll(() => {
     originalDispatcher =
-      React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED
-        .ReactCurrentDispatcher.current;
+      React.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE.H;
   });
   beforeEach(() => {
-    React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentDispatcher.current =
+    React.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE.H =
       originalDispatcher;
   });
 
   it('sets instance properties', async () => {
     class MessageBox extends React.Component {
-      static propTypes = {
-        message: PropTypes.string,
-      };
-
       constructor() {
         super();
       }
@@ -295,8 +289,6 @@ describe('prepare', () => {
     ));
 
     const Testing = ({ children }) => <div>Test {children} </div>;
-    Testing.propTypes = { children: PropTypes.node };
-
     await prepare(
       <App text="foo">
         <App text="foo" />
@@ -562,19 +554,11 @@ describe('prepare', () => {
         </p>
       );
     };
-    MyContextConsumer.propTypes = {
-      expectedData: PropTypes.string,
-      children: PropTypes.node,
-    };
     const AnotherContextConsumer = (props) => {
       const data = useContext(AnotherContext);
       assert.equal(data, props.expectedData);
       return <p>Another:{data}</p>;
     };
-    AnotherContextConsumer.propTypes = {
-      expectedData: PropTypes.string,
-    };
-
     const App = () => (
       <>
         <MyContextConsumer expectedData="initial" />
@@ -799,11 +783,7 @@ describe('prepare', () => {
         </li>
       </ul>
     );
-    App.propTypes = {
-      texts: PropTypes.array,
-    };
-
-    await prepare(<App texts={['first', 'second']} />);
+        await prepare(<App texts={['first', 'second']} />);
 
     assert(
       prepareUsingPropsForFirstChild.calledOnce,

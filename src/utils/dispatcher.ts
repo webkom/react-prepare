@@ -22,7 +22,7 @@ export type Dispatcher = ReactDispatcher & {
 };
 
 const ReactInternals = (React as ReactWithInternals)
-  .__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+  .__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
 
 const noOp = (): void => {
   // do nothing
@@ -112,7 +112,7 @@ export const setDispatcherContext = (
 };
 
 export const registerDispatcher = (dispatcher: Dispatcher): void => {
-  ReactInternals.ReactCurrentDispatcher.current = dispatcher;
+  ReactInternals.H = dispatcher;
 };
 
 export const popHookPromises = (dispatcher: Dispatcher): Promise<unknown>[] => {

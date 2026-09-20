@@ -1,28 +1,25 @@
+import React from 'react';
 import { describe, it } from 'vitest';
 import assert from 'assert/strict';
-import React, { Component } from 'react';
-import PropTypes from 'prop-types';
+import { Component } from 'react';
 import { renderToString } from 'react-dom/server';
 import sinon from 'sinon';
 
 describe('React lifecycle methods', () => {
   class CompositeComponent extends Component {
-    static propTypes = {
-      spyForComponentWillMount: PropTypes.func,
-      spyForComponentWillUnmount: PropTypes.func,
-    };
-
     // eslint-disable-next-line react/no-deprecated
     componentWillMount() {
       const { spyForComponentWillMount } = this.props;
-      spyForComponentWillMount();
+      spyForComponentWillMount && spyForComponentWillMount();
     }
 
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     componentWillUnmount() {
       const { spyForComponentWillUnmount } = this.props;
-      spyForComponentWillUnmount();
+      spyForComponentWillUnmount && spyForComponentWillUnmount();
     }
 
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     render() {
       return <div>CompositeComponent</div>;
     }
