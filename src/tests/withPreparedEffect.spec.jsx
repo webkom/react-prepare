@@ -2,7 +2,6 @@ import { describe, it, beforeEach } from 'vitest';
 import sinon from 'sinon';
 import assert from 'assert/strict';
 import React, { Component, PureComponent } from 'react';
-import PropTypes from 'prop-types';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { prepare, withPreparedEffect } from '../index';
@@ -10,28 +9,18 @@ import { render } from '@testing-library/react';
 
 describe('withPreparedEffect', () => {
   class OriginalCompositeComponent extends Component {
-    static propTypes = {
-      text: PropTypes.string,
-    };
     render() {
       return <div>{this.props.text}</div>;
     }
   }
 
   class OriginalCompositePureComponent extends PureComponent {
-    static propTypes = {
-      text: PropTypes.string,
-    };
     render() {
       return <div>{this.props.text}</div>;
     }
   }
 
   const OriginalArrowComponent = ({ text }) => <div>{text}</div>;
-  OriginalArrowComponent.propTypes = {
-    text: PropTypes.string,
-  };
-
   let doAsyncSideEffect;
   let prepareUsingProps;
 

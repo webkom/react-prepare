@@ -4,15 +4,13 @@ import { ContextWithInternals } from './reactInternalTypes';
 
 const getContextValue = <T>(
   prepareContext: PrepareContext,
-  elementContext: Context<T>,
+  context: Context<T>,
 ): T => {
-  const parentProvider = prepareContext._providers?.get(
-    elementContext.Provider,
-  );
+  const parentProvider = prepareContext._providers?.get(context.Provider);
 
   return parentProvider
     ? parentProvider.value
-    : (elementContext as ContextWithInternals<T>)._currentValue;
+    : (context as ContextWithInternals<T>)._currentValue;
 };
 
 export default getContextValue;

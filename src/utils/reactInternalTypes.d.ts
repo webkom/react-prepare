@@ -8,7 +8,6 @@ import React, {
   ForwardRefRenderFunction,
   LazyExoticComponent,
   MemoExoticComponent,
-  Provider,
   ProviderProps,
   ReactElement,
   useCallback,
@@ -48,10 +47,8 @@ export interface ReactDispatcher {
 }
 
 export type ReactWithInternals = typeof React & {
-  __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED: {
-    ReactCurrentDispatcher: {
-      current: ReactDispatcher;
-    };
+  __CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE: {
+    H: ReactDispatcher | null;
   };
 };
 
@@ -59,30 +56,28 @@ export interface ContextWithInternals<T> extends Context<T> {
   _currentValue: T;
 }
 
-interface ProviderWithInternals<T = unknown> extends Provider<T> {
-  _context: Context<T>;
+export interface ConsumerWithInternals<T> extends Consumer<T> {
+  _context: ContextWithInternals<T>;
 }
 
 export type ProviderElement = ReactElement<
   ProviderProps<unknown>,
-  ProviderWithInternals
+  ContextWithInternals<unknown>
 >;
 
 export type ConsumerElement = ReactElement<
   ConsumerProps<unknown>,
-  Context<unknown> & Consumer<unknown>
+  ConsumerWithInternals<unknown>
 >;
 
 // I couldn't find any exported types in react that matched.
 //  ForwardRefExoticComponent seems completely wrong.
 export type ForwardRefElement<P = unknown> = ReactElement<
-  P,
+  P & { ref: ForwardedRef<unknown> },
   ExoticComponent<P> & {
     render: ForwardRefRenderFunction<unknown, P>;
   }
-> & {
-  ref: ForwardedRef<unknown>;
-};
+>;
 
 export type MemoElement<P = unknown> = ReactElement<
   P,

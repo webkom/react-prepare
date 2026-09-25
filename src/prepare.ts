@@ -112,32 +112,29 @@ async function prepareElement(
     }
     case ELEMENT_TYPE.DOM_ELEMENT:
     case ELEMENT_TYPE.FRAGMENT: {
-      return [(element as ReactElement).props.children, context];
+      return [
+        (element as ReactElement<{ children?: ReactNode }>).props.children,
+        context,
+      ];
     }
     case ELEMENT_TYPE.CONTEXT_PROVIDER: {
       const providerElement = element as ProviderElement;
       const _providers: ContextProviderMap = new Map(context._providers);
-      _providers.set(
-        providerElement.type._context.Provider,
-        providerElement.props,
-      );
+      _providers.set(providerElement.type.Provider, providerElement.props);
       return [providerElement.props.children, { _providers }];
     }
     case ELEMENT_TYPE.CONTEXT_CONSUMER: {
       const consumerElement = element as ConsumerElement;
-      const value = getContextValue(context, consumerElement.type);
+      const value = getContextValue(context, consumerElement.type._context);
 
       const consumerFunc = consumerElement.props.children;
       return [consumerFunc(value), context];
     }
     case ELEMENT_TYPE.FORWARD_REF: {
       const forwardRefElement = element as ForwardRefElement;
+      const { ref, ...props } = forwardRefElement.props;
       const children = await runFunctionComponent(
-        () =>
-          forwardRefElement.type.render(
-            forwardRefElement.props,
-            forwardRefElement.ref,
-          ),
+        () => forwardRefElement.type.render(props, ref),
         dispatcher,
         context,
       );
@@ -155,7 +152,7 @@ async function prepareElement(
     case ELEMENT_TYPE.FUNCTION_COMPONENT: {
       const functionElement = element as FunctionComponentElement<unknown>;
       const children = await runFunctionComponent(
-        () => functionElement.type(functionElement.props),
+        () => functionElement.type(functionElement.props) as ReactNode,
         dispatcher,
         context,
       );

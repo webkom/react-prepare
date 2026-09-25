@@ -1,5 +1,3 @@
-/* eslint-disable react/prop-types */
-
 import { describe, it } from 'vitest';
 import React, { createContext, memo } from 'react';
 import assert from 'assert/strict';

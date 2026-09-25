@@ -34,9 +34,9 @@ export default function getElementType(element: ReactNode): ELEMENT_TYPE {
   } else if (typeof element.type === 'object') {
     // Exotic components
     const type: ExoticComponent = element.type;
-    if (type.$$typeof.toString() === 'Symbol(react.provider)') {
+    if (type.$$typeof.toString() === 'Symbol(react.context)') {
       return ELEMENT_TYPE.CONTEXT_PROVIDER;
-    } else if (type.$$typeof.toString() === 'Symbol(react.context)') {
+    } else if (type.$$typeof.toString() === 'Symbol(react.consumer)') {
       return ELEMENT_TYPE.CONTEXT_CONSUMER;
     } else if (type.$$typeof.toString() === 'Symbol(react.forward_ref)') {
       return ELEMENT_TYPE.FORWARD_REF;

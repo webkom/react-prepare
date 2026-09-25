@@ -32,6 +32,7 @@ export type ClassComponentInstance<P, S = unknown> = Omit<
   'props'
 > & {
   props: P;
+  refs?: Record<string, unknown>;
   updater?: {
     enqueueSetState: (
       publicInstance: Component<P, S>,
